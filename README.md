@@ -108,3 +108,6 @@ Réponds de façon structurée avec des sections claires et au moins :
 1 liste d’APIs/bases de données publiques pertinentes
 1 proposition d’architecture détaillée
 1 plan de projet détaillé sur 3 mois
+
+# Choix technos / fonctionnalités
+
