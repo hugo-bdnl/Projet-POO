@@ -405,21 +405,21 @@ all_altaz = all_coords.transform_to(altaz_frame)
 5. ✅ Écrire script `import_data.py` (import 119k étoiles + 50 villes)
 6. ✅ Créer modèles `Star`, `Constellation`, `ObservationPoint`
 7. ✅ Créer repositories, schemas, services (Architecture POO 4 couches)
-8. ⬜ Télécharger données constellations (Stellarium + D3-Celestial)
-9. ⬜ Importer constellations dans SQLite
+8. ✅ Télécharger données constellations (Stellarium index.json)
+9. ✅ Importer constellations dans SQLite (88 constellations, 714 associations)
 
 **Tâches Frontend** :
 
 1. ✅ Setup projet Vite + React + TypeScript
 2. ✅ Installer Three.js + React Three Fiber + Drei + Postprocessing
 3. ✅ Configurer Axios + Zustand
-4. ⬜ Test : afficher un cube 3D qui tourne
+4. ✅ Test : afficher un cube 3D qui tourne (React Three Fiber + Drei)
 
 **Livrable semaine 2** :
 
 - ✅ SQLite avec 119k étoiles + 50 points d'observation
 - ✅ Backend FastAPI accessible (http://localhost:8000/docs)
-- ⬜ Frontend React affichant cube 3D
+- ✅ Frontend React affichant cube 3D
 
 ---
 

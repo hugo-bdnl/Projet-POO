@@ -171,8 +171,237 @@ def import_observation_points(db: Session) -> int:
     return len(points_data)
 
 
+# --- 88 IAU constellation names ---
+CONSTELLATION_NAMES = {
+    "And": ("Andromeda", "Andromède"),
+    "Ant": ("Antlia", "Machine pneumatique"),
+    "Aps": ("Apus", "Oiseau de paradis"),
+    "Aqr": ("Aquarius", "Verseau"),
+    "Aql": ("Aquila", "Aigle"),
+    "Ara": ("Ara", "Autel"),
+    "Ari": ("Aries", "Bélier"),
+    "Aur": ("Auriga", "Cocher"),
+    "Boo": ("Boötes", "Bouvier"),
+    "Cae": ("Caelum", "Burin"),
+    "Cam": ("Camelopardalis", "Girafe"),
+    "Cnc": ("Cancer", "Cancer"),
+    "CVn": ("Canes Venatici", "Chiens de chasse"),
+    "CMa": ("Canis Major", "Grand Chien"),
+    "CMi": ("Canis Minor", "Petit Chien"),
+    "Cap": ("Capricornus", "Capricorne"),
+    "Car": ("Carina", "Carène"),
+    "Cas": ("Cassiopeia", "Cassiopée"),
+    "Cen": ("Centaurus", "Centaure"),
+    "Cep": ("Cepheus", "Céphée"),
+    "Cet": ("Cetus", "Baleine"),
+    "Cha": ("Chamaeleon", "Caméléon"),
+    "Cir": ("Circinus", "Compas"),
+    "Col": ("Columba", "Colombe"),
+    "Com": ("Coma Berenices", "Chevelure de Bérénice"),
+    "CrA": ("Corona Australis", "Couronne australe"),
+    "CrB": ("Corona Borealis", "Couronne boréale"),
+    "Crv": ("Corvus", "Corbeau"),
+    "Crt": ("Crater", "Coupe"),
+    "Cru": ("Crux", "Croix du Sud"),
+    "Cyg": ("Cygnus", "Cygne"),
+    "Del": ("Delphinus", "Dauphin"),
+    "Dor": ("Dorado", "Dorade"),
+    "Dra": ("Draco", "Dragon"),
+    "Equ": ("Equuleus", "Petit Cheval"),
+    "Eri": ("Eridanus", "Éridan"),
+    "For": ("Fornax", "Fourneau"),
+    "Gem": ("Gemini", "Gémeaux"),
+    "Gru": ("Grus", "Grue"),
+    "Her": ("Hercules", "Hercule"),
+    "Hor": ("Horologium", "Horloge"),
+    "Hya": ("Hydra", "Hydre femelle"),
+    "Hyi": ("Hydrus", "Hydre mâle"),
+    "Ind": ("Indus", "Indien"),
+    "Lac": ("Lacerta", "Lézard"),
+    "Leo": ("Leo", "Lion"),
+    "LMi": ("Leo Minor", "Petit Lion"),
+    "Lep": ("Lepus", "Lièvre"),
+    "Lib": ("Libra", "Balance"),
+    "Lup": ("Lupus", "Loup"),
+    "Lyn": ("Lynx", "Lynx"),
+    "Lyr": ("Lyra", "Lyre"),
+    "Men": ("Mensa", "Table"),
+    "Mic": ("Microscopium", "Microscope"),
+    "Mon": ("Monoceros", "Licorne"),
+    "Mus": ("Musca", "Mouche"),
+    "Nor": ("Norma", "Règle"),
+    "Oct": ("Octans", "Octant"),
+    "Oph": ("Ophiuchus", "Ophiuchus"),
+    "Ori": ("Orion", "Orion"),
+    "Pav": ("Pavo", "Paon"),
+    "Peg": ("Pegasus", "Pégase"),
+    "Per": ("Perseus", "Persée"),
+    "Phe": ("Phoenix", "Phénix"),
+    "Pic": ("Pictor", "Peintre"),
+    "Psc": ("Pisces", "Poissons"),
+    "PsA": ("Piscis Austrinus", "Poisson austral"),
+    "Pup": ("Puppis", "Poupe"),
+    "Pyx": ("Pyxis", "Boussole"),
+    "Ret": ("Reticulum", "Réticule"),
+    "Sge": ("Sagitta", "Flèche"),
+    "Sgr": ("Sagittarius", "Sagittaire"),
+    "Sco": ("Scorpius", "Scorpion"),
+    "Scl": ("Sculptor", "Sculpteur"),
+    "Sct": ("Scutum", "Écu de Sobieski"),
+    "Ser": ("Serpens", "Serpent"),
+    "Sex": ("Sextans", "Sextant"),
+    "Tau": ("Taurus", "Taureau"),
+    "Tel": ("Telescopium", "Télescope"),
+    "Tri": ("Triangulum", "Triangle"),
+    "TrA": ("Triangulum Australe", "Triangle austral"),
+    "Tuc": ("Tucana", "Toucan"),
+    "UMa": ("Ursa Major", "Grande Ourse"),
+    "UMi": ("Ursa Minor", "Petite Ourse"),
+    "Vel": ("Vela", "Voiles"),
+    "Vir": ("Virgo", "Vierge"),
+    "Vol": ("Volans", "Poisson volant"),
+    "Vul": ("Vulpecula", "Petit Renard"),
+}
+
+
+def import_constellations(db: Session) -> int:
+    """
+    Importe les 88 constellations IAU avec leurs patterns de lignes
+    depuis le fichier index.json de Stellarium (modern sky culture).
+
+    Le fichier est téléchargé depuis GitHub.
+    Format JSON : chaque constellation a un id "CON modern Aql"
+    et des polylines [[hip1, hip2, hip3], ...] converties en segments.
+
+    @param db: Session SQLAlchemy active
+    @return: Nombre de constellations importées
+    """
+    # URL du fichier Stellarium (Modern sky culture — index.json)
+    json_url = (
+        "https://raw.githubusercontent.com/Stellarium/stellarium/"
+        "master/skycultures/modern/index.json"
+    )
+
+    print("📥 Téléchargement de index.json (Stellarium modern)...")
+    try:
+        req = urllib.request.Request(json_url, headers={"User-Agent": "NightSkyViewer/1.0"})
+        with urllib.request.urlopen(req, timeout=60) as response:
+            json_content = response.read().decode("utf-8")
+        print(f"   Fichier téléchargé ({len(json_content)} octets)")
+    except Exception as e:
+        raise RuntimeError(
+            f"Impossible de télécharger index.json : {e}\n"
+            "URL : " + json_url
+        )
+
+    data = json.loads(json_content)
+    constellations_data = data.get("constellations", [])
+    print(f"   {len(constellations_data)} constellations trouvées dans le JSON")
+
+    constellation_count = 0
+    total_associations = 0
+
+    # Map abbreviation lookup — Stellarium uses mixed case (e.g. "Aql")
+    # Build a case-insensitive lookup for our CONSTELLATION_NAMES dict
+    names_lookup = {}
+    for key, value in CONSTELLATION_NAMES.items():
+        names_lookup[key.lower()] = (key, value[0], value[1])
+
+    for con_data in constellations_data:
+        con_id = con_data.get("id", "")
+        # Extract abbreviation from id like "CON modern Aql"
+        parts = con_id.split()
+        if len(parts) < 3:
+            continue
+        abbr_raw = parts[-1]  # e.g. "Aql"
+
+        # Get polylines — each is a chain of HIP IDs
+        polylines = con_data.get("lines", [])
+
+        # Convert polylines to segment pairs [[hip1, hip2], [hip2, hip3], ...]
+        lines = []
+        all_hip_ids = set()
+        for polyline in polylines:
+            # Filter out non-integer IDs (Gaia DR3 IDs are strings, skip them)
+            int_hips = []
+            for h in polyline:
+                if isinstance(h, int):
+                    int_hips.append(h)
+                elif isinstance(h, str) and h.isdigit() and len(h) <= 6:
+                    int_hips.append(int(h))
+                # Skip long Gaia DR3 string IDs and DSO references
+
+            for i in range(len(int_hips) - 1):
+                lines.append([int_hips[i], int_hips[i + 1]])
+            all_hip_ids.update(int_hips)
+
+        if not lines:
+            continue
+
+        unique_hips = list(all_hip_ids)
+
+        # Look up names from dictionary
+        lookup = names_lookup.get(abbr_raw.lower())
+        if lookup:
+            abbr_final, name_en, name_fr = lookup
+        else:
+            abbr_final = abbr_raw
+            name_en = abbr_raw
+            name_fr = abbr_raw
+
+        # Compute center RA/Dec from member stars
+        member_stars = (
+            db.query(Star)
+            .filter(Star.hip_id.in_(unique_hips))
+            .all()
+        )
+
+        center_ra = None
+        center_dec = None
+        if member_stars:
+            center_ra = sum(s.ra for s in member_stars) / len(member_stars)
+            center_dec = sum(s.dec for s in member_stars) / len(member_stars)
+
+        # Create Constellation row
+        constellation = Constellation(
+            name=name_en,
+            abbreviation=abbr_final.upper()[:3],
+            name_fr=name_fr,
+            center_ra=center_ra,
+            center_dec=center_dec,
+            lines_data=json.dumps(lines),
+        )
+        db.add(constellation)
+        db.flush()  # Get the generated ID
+
+        # Create ConstellationStar associations
+        for star in member_stars:
+            assoc = ConstellationStar(
+                constellation_id=constellation.id,
+                star_id=star.id,
+            )
+            db.add(assoc)
+            total_associations += 1
+
+        constellation_count += 1
+
+    db.commit()
+    print(f"✅ {constellation_count} constellations importées")
+    print(f"   {total_associations} associations étoile-constellation créées")
+    return constellation_count
+
+
 def main():
     """Point d'entrée principal du script d'import."""
+    import argparse
+    parser = argparse.ArgumentParser(description="Import astronomique Night Sky Viewer")
+    parser.add_argument(
+        "--constellations-only",
+        action="store_true",
+        help="Importer uniquement les constellations (étoiles déjà en base)",
+    )
+    args = parser.parse_args()
+
     print("=" * 60)
     print("🌌 Night Sky Viewer — Import de données")
     print("=" * 60)
@@ -185,29 +414,60 @@ def main():
     db = SessionLocal()
 
     try:
-        # Vérification si données déjà présentes
         from app.repositories.star_repository import StarRepository
         repo = StarRepository(db)
-        existing = repo.count()
 
-        if existing > 0:
-            print(f"\n⚠️  Base déjà peuplée ({existing} étoiles). Abandon.")
-            print("   Pour re-importer : supprimer le fichier data/nightsky.db")
-            return
+        if args.constellations_only:
+            # Mode constellations uniquement
+            existing_stars = repo.count()
+            if existing_stars == 0:
+                print("\n❌ Aucune étoile en base. Lancez d'abord un import complet.")
+                return
+            print(f"\n📊 {existing_stars} étoiles déjà en base.")
 
-        # Import étoiles
-        print("\n🌟 Import des étoiles (HYG Database v3.7)...")
-        star_count = import_hyg_database(db)
+            # Supprimer les anciennes constellations si nécessaire
+            from sqlalchemy import text
+            db.execute(text("DELETE FROM constellation_stars"))
+            db.execute(text("DELETE FROM constellations"))
+            db.commit()
+            print("   Tables constellations vidées.")
 
-        # Import points d'observation
-        print("\n📍 Import des points d'observation...")
-        point_count = import_observation_points(db)
+            # Import constellations
+            print("\n⭐ Import des constellations (Stellarium)...")
+            constellation_count = import_constellations(db)
 
-        print("\n" + "=" * 60)
-        print(f"✅ Import terminé !")
-        print(f"   • {star_count} étoiles")
-        print(f"   • {point_count} points d'observation")
-        print("=" * 60)
+            print("\n" + "=" * 60)
+            print(f"✅ Import terminé !")
+            print(f"   • {constellation_count} constellations")
+            print("=" * 60)
+        else:
+            # Import complet
+            existing = repo.count()
+
+            if existing > 0:
+                print(f"\n⚠️  Base déjà peuplée ({existing} étoiles). Abandon.")
+                print("   Pour re-importer : supprimer le fichier data/nightsky.db")
+                print("   Pour importer les constellations : --constellations-only")
+                return
+
+            # Import étoiles
+            print("\n🌟 Import des étoiles (HYG Database v3.7)...")
+            star_count = import_hyg_database(db)
+
+            # Import points d'observation
+            print("\n📍 Import des points d'observation...")
+            point_count = import_observation_points(db)
+
+            # Import constellations
+            print("\n⭐ Import des constellations (Stellarium)...")
+            constellation_count = import_constellations(db)
+
+            print("\n" + "=" * 60)
+            print(f"✅ Import terminé !")
+            print(f"   • {star_count} étoiles")
+            print(f"   • {point_count} points d'observation")
+            print(f"   • {constellation_count} constellations")
+            print("=" * 60)
 
     except Exception as e:
         db.rollback()
