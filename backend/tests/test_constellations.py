@@ -1,7 +1,10 @@
 """
-Tests d'intégrité des données de constellations importées.
-Vérifie que les 88 constellations IAU sont correctement importées
-avec leurs patterns de lignes et associations étoiles.
+Tests d'intégrité des données de constellations importées
+et tests d'intégration des endpoints API constellations + health.
+
+Tâche 5 du plan semaines 3-4 :
+  - Tests API GET /api/constellations, GET /{id}, GET /search, GET /{id}/best-location
+  - Tests Health GET /, GET /api/health
 
 Usage :
     cd backend
@@ -13,6 +16,7 @@ import sys
 import os
 
 import pytest
+from fastapi.testclient import TestClient
 from sqlalchemy import func
 
 # Ensure app modules are importable
@@ -21,6 +25,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from app.database import SessionLocal
 from app.models.constellation import Constellation, ConstellationStar
 from app.models.star import Star
+from app.main import app
 
 
 @pytest.fixture(scope="module")
@@ -29,6 +34,13 @@ def db():
     session = SessionLocal()
     yield session
     session.close()
+
+
+@pytest.fixture(scope="module")
+def client():
+    """Fournit un client HTTP TestClient pour les tests d'intégration API."""
+    with TestClient(app) as c:
+        yield c
 
 
 class TestConstellationCount:
@@ -197,3 +209,173 @@ class TestKnownConstellations:
             f"Abréviations en double : "
             f"{[a for a in abbrs if abbrs.count(a) > 1]}"
         )
+
+
+# ═══════════════════════════════════════════════════════════════════
+#  TESTS D'INTÉGRATION API CONSTELLATIONS (TestClient FastAPI)
+# ═══════════════════════════════════════════════════════════════════
+
+class TestConstellationsAPI:
+    """Tests d'intégration des endpoints API constellations."""
+
+    def test_get_all_returns_200(self, client):
+        """GET /api/constellations doit retourner 200."""
+        response = client.get("/api/constellations")
+        assert response.status_code == 200
+
+    def test_get_all_returns_list(self, client):
+        """GET /api/constellations doit retourner une liste."""
+        response = client.get("/api/constellations")
+        data = response.json()
+        assert isinstance(data, list)
+
+    def test_get_all_returns_88_constellations(self, client):
+        """GET /api/constellations doit retourner 88 constellations."""
+        response = client.get("/api/constellations")
+        data = response.json()
+        assert len(data) == 88, f"Attendu 88 constellations, reçu {len(data)}"
+
+    def test_get_all_has_required_fields(self, client):
+        """Chaque constellation doit contenir les champs requis."""
+        response = client.get("/api/constellations")
+        data = response.json()
+        required_fields = {"id", "name", "abbreviation"}
+        for c in data[:5]:
+            missing = required_fields - set(c.keys())
+            assert not missing, (
+                f"Champs manquants pour '{c.get('name', '?')}' : {missing}"
+            )
+
+    def test_get_by_id_returns_200(self, client):
+        """GET /api/constellations/1 doit retourner 200."""
+        response = client.get("/api/constellations/1")
+        assert response.status_code == 200
+
+    def test_get_by_id_has_detail_fields(self, client):
+        """GET /api/constellations/{id} doit contenir les champs détaillés."""
+        response = client.get("/api/constellations/1")
+        data = response.json()
+        assert "id" in data
+        assert "name" in data
+        assert "abbreviation" in data
+        assert "lines_data" in data
+        assert data["id"] == 1
+
+    def test_get_by_id_not_found_returns_404(self, client):
+        """GET /api/constellations/99999 doit retourner 404."""
+        response = client.get("/api/constellations/99999")
+        assert response.status_code == 404
+
+    def test_search_orion_returns_results(self, client):
+        """Recherche 'Orion' doit retourner au moins un résultat."""
+        response = client.get("/api/constellations/search", params={"q": "Orion"})
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data) >= 1, "Aucun résultat pour 'Orion'"
+
+    def test_search_returns_matching_names(self, client):
+        """Les résultats de recherche doivent correspondre au terme."""
+        response = client.get("/api/constellations/search", params={"q": "Ursa"})
+        data = response.json()
+        for c in data:
+            name_lower = (c.get("name", "") + c.get("name_fr", "")).lower()
+            assert "ursa" in name_lower, (
+                f"Résultat '{c['name']}' ne correspond pas à 'Ursa'"
+            )
+
+    def test_search_short_query_returns_422(self, client):
+        """Recherche avec un seul caractère doit retourner 422."""
+        response = client.get("/api/constellations/search", params={"q": "A"})
+        assert response.status_code == 422
+
+    def test_best_location_returns_200_or_404(self, client):
+        """GET /api/constellations/{id}/best-location doit retourner 200 ou 404."""
+        all_resp = client.get("/api/constellations")
+        constellations = all_resp.json()
+        test_id = None
+        for c in constellations:
+            if c.get("center_ra") is not None and c.get("center_dec") is not None:
+                test_id = c["id"]
+                break
+        if test_id is None:
+            pytest.skip("Aucune constellation avec coordonnées centrales")
+
+        response = client.get(f"/api/constellations/{test_id}/best-location")
+        assert response.status_code in (200, 404)
+
+    def test_best_location_has_required_fields(self, client):
+        """Le meilleur point doit contenir les champs requis."""
+        all_resp = client.get("/api/constellations")
+        constellations = all_resp.json()
+        test_id = None
+        for c in constellations:
+            if c.get("center_ra") is not None and c.get("center_dec") is not None:
+                test_id = c["id"]
+                break
+        if test_id is None:
+            pytest.skip("Aucune constellation avec coordonnées centrales")
+
+        response = client.get(f"/api/constellations/{test_id}/best-location")
+        if response.status_code == 200:
+            data = response.json()
+            required = {
+                "observation_point_id", "observation_point_name",
+                "latitude", "longitude",
+                "constellation_altitude", "visibility_score",
+            }
+            missing = required - set(data.keys())
+            assert not missing, f"Champs manquants : {missing}"
+
+    def test_best_location_not_found_returns_404(self, client):
+        """GET /api/constellations/99999/best-location doit retourner 404."""
+        response = client.get("/api/constellations/99999/best-location")
+        assert response.status_code == 404
+
+
+# ═══════════════════════════════════════════════════════════════════
+#  TESTS HEALTH ENDPOINTS
+# ═══════════════════════════════════════════════════════════════════
+
+class TestHealthAPI:
+    """Tests des endpoints de santé de l'application."""
+
+    def test_root_returns_200(self, client):
+        """GET / doit retourner 200."""
+        response = client.get("/")
+        assert response.status_code == 200
+
+    def test_root_has_app_and_status(self, client):
+        """GET / doit contenir 'app' et 'status'."""
+        response = client.get("/")
+        data = response.json()
+        assert "app" in data, "Champ 'app' manquant"
+        assert "status" in data, "Champ 'status' manquant"
+        assert data["status"] == "running"
+
+    def test_health_returns_200(self, client):
+        """GET /api/health doit retourner 200."""
+        response = client.get("/api/health")
+        assert response.status_code == 200
+
+    def test_health_has_required_fields(self, client):
+        """GET /api/health doit contenir status, database, star_count."""
+        response = client.get("/api/health")
+        data = response.json()
+        assert "status" in data, "Champ 'status' manquant"
+        assert "database" in data, "Champ 'database' manquant"
+        assert "star_count" in data, "Champ 'star_count' manquant"
+
+    def test_health_db_connected(self, client):
+        """Health check doit indiquer que la DB est connectée."""
+        response = client.get("/api/health")
+        data = response.json()
+        assert data["database"] == "connected", (
+            f"DB non connectée : {data['database']}"
+        )
+        assert data["status"] == "healthy"
+
+    def test_health_star_count_positive(self, client):
+        """Health check doit retourner un nombre d'étoiles > 0."""
+        response = client.get("/api/health")
+        data = response.json()
+        assert data["star_count"] > 0, "star_count doit être > 0"
