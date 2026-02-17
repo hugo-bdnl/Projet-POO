@@ -431,6 +431,9 @@ all_altaz = all_coords.transform_to(altaz_frame)
 
 1. ✅ Endpoint `GET /api/observation-points` (retourne 50 villes) — vérifié opérationnel
 2. ✅ Tests unitaires PyTest (19/19 passent : count, data quality, villes connues, API)
+3. Tests unitaires Stars — données BD (119k étoiles, qualité des colonnes) + API (`/api/stars/visible`, `/api/stars/{id}`, `/api/stars/search/{q}`)
+4. Tests unitaires Services — `AstronomyService` (compute_visible_stars, compute_single_position) + `CacheService` (get/set, make_time_key, clear)
+5. Tests API Constellations (GET /api/constellations, GET /{id}, GET /search, GET /{id}/best-location) + Health endpoint (GET /, GET /api/health)
 
 **Tâches Frontend** :
 
