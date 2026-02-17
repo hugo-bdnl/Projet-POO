@@ -429,13 +429,13 @@ all_altaz = all_coords.transform_to(altaz_frame)
 
 **Tâches Backend** :
 
-1. Endpoint `GET /api/observation-points` (retourne 50 villes)
-2. Tests unitaires service (PyTest)
+1. ✅ Endpoint `GET /api/observation-points` (retourne 50 villes) — vérifié opérationnel
+2. ✅ Tests unitaires PyTest (19/19 passent : count, data quality, villes connues, API)
 
 **Tâches Frontend** :
 
-1. Télécharger textures NASA (8K Terre jour + night lights + normal map)
-2. Compresser textures en WebP
+1. ✅ Télécharger textures Terre (8K jour + night lights via Solar System Scope, 2K normal + specular via Three.js)
+2. ✅ Compresser textures en WebP (qualité 85%, total ~2.9 Mo dans `public/textures/`)
 3. Créer composant `<Globe />` avec Three.js :
    - Sphère rayon 1
    - MeshStandardMaterial avec textures PBR

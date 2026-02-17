@@ -91,7 +91,7 @@ Model Layer        →  Star, Constellation, ConstellationStar, ObservationPoint
 
 ```bash
 # 1. Cloner le repo
-git clone https://github.com/<username>/Projet-POO.git
+git clone https://github.com/hugo-bdnl/Projet-POO.git
 cd Projet-POO
 
 # 2. Backend
