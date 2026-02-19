@@ -439,7 +439,7 @@ all_altaz = all_coords.transform_to(altaz_frame)
 
 1. ✅ Télécharger textures Terre (8K jour + night lights via Solar System Scope, 2K normal + specular via Three.js)
 2. ✅ Compresser textures en WebP (qualité 85%, total ~2.9 Mo dans `public/textures/`)
-3. Créer composant `<Globe />` avec Three.js :
+3. ✅ Créer composant `<Globe />` avec Three.js :
    - Sphère rayon 1
    - MeshStandardMaterial avec textures PBR
    - Rotation auto lente
