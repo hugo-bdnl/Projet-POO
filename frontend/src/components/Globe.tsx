@@ -1,10 +1,20 @@
-import { useRef } from "react";
+import { useRef, useEffect } from "react";
 import { useFrame } from "@react-three/fiber";
 import { useTexture } from "@react-three/drei";
 import * as THREE from "three";
+import { LocationMarker } from "./LocationMarker";
+import { useObservationStore } from "../stores/useObservationStore";
 
 export function Globe() {
   const meshRef = useRef<THREE.Mesh>(null!);
+
+  // Connexion au state manager
+  const { points, fetchPoints } = useObservationStore();
+
+  // On fetch les 50 villes uniquement au montage du composant
+  useEffect(() => {
+    fetchPoints();
+  }, [fetchPoints]);
 
   // Chargement des textures (useTexture de drei gère la mise en cache et le suspense)
   const [colorMap, normalMap, specularMap, emissiveMap] = useTexture([
@@ -38,6 +48,41 @@ export function Globe() {
         emissive={new THREE.Color(0xffffff)}
         emissiveIntensity={0.2}
       />
+      {/* 50 Points d'observation depuis l'API */}
+      {points.map((pt) => (
+        <LocationMarker
+          key={pt.id}
+          id={pt.id}
+          lat={pt.latitude}
+          lon={pt.longitude}
+          name={pt.name}
+          timezone={pt.timezone}
+        />
+      ))}
+
+      {/* Tâche 7 : Effet Atmosphère (Glow) */}
+      <mesh>
+        <sphereGeometry args={[1.05, 64, 64]} />
+        <shaderMaterial
+          transparent
+          depthWrite={false}
+          blending={THREE.AdditiveBlending}
+          vertexShader={`
+            varying vec3 vNormal;
+            void main() {
+              vNormal = normalize(normalMatrix * normal);
+              gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+            }
+          `}
+          fragmentShader={`
+            varying vec3 vNormal;
+            void main() {
+              float intensity = pow(0.6 - dot(vNormal, vec3(0, 0, 1.0)), 4.0);
+              gl_FragColor = vec4(0.3, 0.6, 1.0, 1.0) * intensity;
+            }
+          `}
+        />
+      </mesh>
     </mesh>
   );
 }

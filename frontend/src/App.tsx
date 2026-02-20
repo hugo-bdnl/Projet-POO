@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import { Canvas } from "@react-three/fiber";
 import { OrbitControls } from "@react-three/drei";
 import { Globe } from "./components/Globe";
+import { SidePanel } from "./components/SidePanel";
 import "./App.css";
 
 function App() {
@@ -11,6 +12,10 @@ function App() {
       <p className="overlay-subtitle">
         Globe 3D interactif - Textures PBR (8K/2K)
       </p>
+
+      {/* Panneau latéral HTML UI - Tâche 6 */}
+      <SidePanel />
+
       <Canvas camera={{ position: [0, 0, 3], fov: 50 }}>
         <ambientLight intensity={0.2} />
         {/* Lumière directionnelle pour simuler le Soleil */}

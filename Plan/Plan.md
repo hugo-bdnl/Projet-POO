@@ -444,13 +444,13 @@ all_altaz = all_coords.transform_to(altaz_frame)
    - MeshStandardMaterial avec textures PBR
    - Rotation auto lente
    - OrbitControls (rotation manuelle souris)
-4. Créer composant `<LocationMarker />` :
+4. ✅ Créer composant `<LocationMarker />` :
    - Pins 3D sur globe
    - Conversion lat/lon → coordonnées 3D sphériques
    - OnClick event → highlight marqueur
-5. Fetch `/api/observation-points` et afficher 50 marqueurs
-6. Panneau latéral : afficher infos ville sélectionnée
-7. Effet atmosphère (shader custom bleu clair)
+5. ✅ Fetch `/api/observation-points` et afficher 50 marqueurs
+6. ✅ Panneau latéral : afficher infos ville sélectionnée
+7. ✅ Effet atmosphère (shader custom bleu clair)
 
 **Livrable semaine 4** :
 
