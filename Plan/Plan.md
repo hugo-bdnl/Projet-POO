@@ -526,18 +526,18 @@ all_altaz = all_coords.transform_to(altaz_frame)
 
 **Tâches Frontend** :
 
-1. Panneau latéral : liste 88 constellations (search bar)
-2. Clic constellation :
+1. ✅ Panneau latéral : liste 88 constellations (search bar)
+2. ✅ Clic constellation :
    - Fetch best-location → animation caméra vers point optimal
    - Fetch étoiles visibles
    - Afficher ciel avec constellation surbrillancée
-3. Composant `<ConstellationPattern />` :
+3. ✅ Composant `<ConstellationPattern />` :
    - Dessiner lignes entre étoiles (Line Three.js)
    - Couleur vive (cyan/jaune)
    - Étoiles pattern agrandies
-4. **Slider temporel** pour voyager dans le temps (date/heure arbitraire)
-5. Highlight persistant jusqu'à désélection
-6. Noms constellations affichés au centre pattern
+4. ✅ **Slider temporel** pour voyager dans le temps (date/heure arbitraire)
+5. ✅ Highlight persistant jusqu'à désélection
+6. ✅ Noms constellations affichés au centre pattern
 
 **Livrable semaine 10** :
 
@@ -555,25 +555,25 @@ all_altaz = all_coords.transform_to(altaz_frame)
 
 **Tâches** :
 
-1. **Dark theme complet** (noir spatial + accents cyan/violet)
-2. **Animations** :
-   - Transition globe → ciel (3 secondes smooth)
-   - Fade-in étoiles progressif
-   - Hover states sur boutons
-3. **Loading states** (skeleton loader, progress bar)
-4. **Responsive design** (mobile : panneau bottom sheet, touch gestures)
-5. **Gestion erreurs** (toast notifications, fallback si API down, retry logic)
-6. **Documentation** (docstrings, JSDoc, README)
+1. ✅ **Dark theme complet** (noir spatial + accents cyan/violet)
+2. ✅ **Animations** :
+   - ✅ Transition globe → ciel (zoom corrigé au retour sur le globe)
+   - ✅ Fade-in étoiles progressif
+   - ✅ Hover states sur boutons
+3. ✅ **Loading states** (skeleton loader, progress bar)
+4. ✅ **Responsive design** (mobile : panneau bottom sheet, touch gestures)
+5. ✅ **Gestion erreurs** (toast notifications, fallback si API down, retry logic)
+6. ✅ **Documentation** (docstrings, JSDoc, README)
 7. **Tests** :
    - Tests unitaires backend (coverage 70%+, PyTest)
    - Tests composants React (Jest)
-8. **Refactoring** : respect SOLID, DRY, typage strict
+8. ✅ **Refactoring** : respect SOLID, DRY, typage strict
 
 **Ajouts visuels (bonus)** :
 
 - Voie lactée texture ESA
 - Grille azimut/altitude (toggle)
-- Compteur étoiles visibles en temps réel
+- ✅ Compteur étoiles visibles en temps réel
 - Mode jour/nuit sur le globe (terminateur dynamique)
 
 **Livrable semaine 11** :
@@ -584,7 +584,24 @@ all_altaz = all_coords.transform_to(altaz_frame)
 
 ---
 
-### SEMAINE 12 : DÉPLOIEMENT & PRÉSENTATION
+### SEMAINE 12 : AMÉLIORATIONS UI/UX (V2)
+
+**Objectif** : Ajustements post-retours pour une expérience utilisateur optimale.
+
+**Nouvelles Tâches (Non commencées)** :
+
+1. [ ] **Régler le problème de luminosité** globale (des étoiles et de l'environnement).
+2. [ ] **Caméra intelligente au clic Constellation** : Orienter précisément la caméra face au pattern 3D de la constellation recherchée au lieu d'une orientation fixe.
+3. [ ] **Modifier les contrôles caméra** : Permettre une exploration plus libre et intuitive du cosmos.
+4. [ ] **Mécanique de recherche visuelle des constellations** :
+   - Ajouter une "sidebar" (barre latérale) à gauche de la Terre.
+   - Celle-ci comprendra une liste déroulante avec les images des formes géométriques de chaque constellation et leur nom en dessous.
+   - La barre de texte de recherche existante (à droite) reste intacte.
+5. [ ] **Gérer les couleurs** de l'interface et du rendu pour un meilleur esthétisme.
+
+---
+
+### SEMAINE 13 : DÉPLOIEMENT & PRÉSENTATION
 
 **Objectif** : Mise en production, démo prête
 

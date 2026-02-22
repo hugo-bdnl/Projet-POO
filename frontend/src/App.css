@@ -5,8 +5,8 @@
   font-weight: 400;
 
   color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #0f172a;
+  color: #e2e8f0;
+  background-color: #050510; /* Espace Profond */
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -57,29 +57,45 @@ body {
 }
 
 /* 
-  ------ NOUVEAUX STYLES POUR LE SIDEPANEL ------
+  ------ STYLES SIDEPANEL ET RESPONSIVE ------
 */
 .side-panel {
   position: absolute;
   right: 2rem;
   top: 2rem;
   width: 300px;
-  background: rgba(15, 23, 42, 0.7);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 12px;
+  max-height: calc(100vh - 4rem);
+  overflow-y: auto;
+  background: rgba(10, 10, 20, 0.85); /* Plus sombre */
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(0, 240, 255, 0.2); /* Accent cyan subtil */
+  border-radius: 16px;
   padding: 1.5rem;
   color: #f8fafc;
   z-index: 20;
-  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
-  animation: slideFadeIn 0.3s ease-out forwards;
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.6),
+    0 0 10px rgba(0, 240, 255, 0.1);
+  animation: slideFadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Scrollbar personnalisée */
+.side-panel::-webkit-scrollbar {
+  width: 6px;
+}
+.side-panel::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+}
+.side-panel::-webkit-scrollbar-thumb {
+  background: rgba(0, 240, 255, 0.3);
+  border-radius: 3px;
 }
 
 @keyframes slideFadeIn {
   from {
     opacity: 0;
-    transform: translateX(20px);
+    transform: translateX(30px);
   }
   to {
     opacity: 1;
@@ -97,20 +113,26 @@ body {
 
 .side-panel .close-button {
   position: absolute;
-  top: 1rem;
+  top: 1.2rem;
   right: 1.2rem;
-  background: none;
+  background: rgba(255, 255, 255, 0.1);
   border: none;
+  border-radius: 50%;
+  width: 28px;
+  height: 28px;
   color: #94a3b8;
-  font-size: 1.2rem;
+  font-size: 1rem;
   cursor: pointer;
-  padding: 0;
-  line-height: 1;
-  transition: color 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
 }
 
 .side-panel .close-button:hover {
-  color: #f8fafc;
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+  transform: scale(1.1);
 }
 
 .info-group {
@@ -134,5 +156,86 @@ body {
 .info-group .value {
   font-size: 0.95rem;
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  color: #60a5fa; /* Bleu clair */
+  color: #00f0ff; /* Accent Cyan Neon */
+}
+
+/* Boutons d'action */
+.action-button {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%) !important;
+  box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.action-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(139, 92, 246, 0.5);
+  filter: brightness(1.1);
+}
+
+.action-button:active {
+  transform: translateY(1px);
+}
+
+/* Toast Messages */
+.toast-container {
+  position: absolute;
+  bottom: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(220, 38, 38, 0.9); /* Rouge erreur */
+  color: white;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+  z-index: 100;
+  pointer-events: none;
+  animation: toastPop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+@keyframes toastPop {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, 20px) scale(0.9);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(-50%, 0) scale(1);
+  }
+}
+
+/* Responsive (Mobile Bottom Sheet) */
+@media (max-width: 768px) {
+  .side-panel {
+    top: auto;
+    bottom: 0;
+    right: 0;
+    left: 0;
+    width: 100%;
+    max-height: 50vh;
+    border-radius: 20px 20px 0 0;
+    border: none;
+    border-top: 1px solid rgba(0, 240, 255, 0.2);
+    animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    padding-bottom: 2rem; /* Espace safe area ios */
+    box-sizing: border-box;
+  }
+
+  @keyframes slideUp {
+    from {
+      transform: translateY(100%);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+
+  .toast-container {
+    bottom: 20px;
+  }
 }

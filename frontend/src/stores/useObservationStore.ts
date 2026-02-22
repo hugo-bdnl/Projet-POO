@@ -21,11 +21,12 @@ export const useObservationStore = create<ObservationState>((set) => ({
     try {
       const data = await astronomyService.getObservationPoints();
       set({ points: data, loading: false });
-    } catch (err: any) {
+    } catch (err: unknown) {
       set({
         error:
-          err?.message ||
-          "Erreur lors de la récupération des points d'observation",
+          err instanceof Error
+            ? err.message
+            : "Erreur lors de la récupération des points d'observation",
         loading: false,
       });
       console.error("Échec de fetchPoints:", err);
