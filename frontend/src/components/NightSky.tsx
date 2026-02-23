@@ -38,6 +38,14 @@ export const NightSky = () => {
   const pointsRef = useRef<THREE.Points>(null);
   const materialRef = useRef<THREE.ShaderMaterial>(null);
 
+  // Stabiliser les uniforms pour éviter la réinitialisation par React
+  const uniforms = useMemo(
+    () => ({
+      uTime: { value: 0.0 },
+    }),
+    [],
+  );
+
   const { positions, colors, sizes, starMap } = useMemo(() => {
     const positionsData: number[] = [];
     const colorsData: number[] = [];
@@ -125,9 +133,7 @@ export const NightSky = () => {
           // Additive blending pour effet de lumière intense / cumuls
           blending={THREE.AdditiveBlending}
           depthWrite={false}
-          uniforms={{
-            uTime: { value: 0.0 },
-          }}
+          uniforms={uniforms}
           vertexShader={`
             attribute float size;
             attribute vec3 color;

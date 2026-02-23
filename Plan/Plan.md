@@ -590,7 +590,7 @@ all_altaz = all_coords.transform_to(altaz_frame)
 
 **Nouvelles Tâches (Non commencées)** :
 
-1. [ ] **Régler le problème de luminosité** globale (des étoiles et de l'environnement).
+1. [x] **Régler le problème de luminosité** globale (des étoiles et de l'environnement).
 2. [ ] **Caméra intelligente au clic Constellation** : Orienter précisément la caméra face au pattern 3D de la constellation recherchée au lieu d'une orientation fixe.
 3. [ ] **Modifier les contrôles caméra** : Permettre une exploration plus libre et intuitive du cosmos.
 4. [ ] **Mécanique de recherche visuelle des constellations** :
