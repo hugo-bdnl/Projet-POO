@@ -13,6 +13,7 @@ export function SidePanel() {
     setSelectedStar,
     stars,
     timestamp,
+    setCameraTarget,
   } = useSkyStore();
 
   const {
@@ -23,10 +24,13 @@ export function SidePanel() {
     loadingList,
     fetchConstellationDetailAndLocation,
     loadingDetail,
+    clearSelection,
   } = useConstellationStore();
 
   const handleObserveSky = () => {
     if (selectedPoint) {
+      setCameraTarget(null);
+      clearSelection(); // Retirer la constellation pour restaurer la luminosité
       setViewMode("sky");
       fetchVisibleStars(
         selectedPoint.latitude,
@@ -39,6 +43,8 @@ export function SidePanel() {
   const handleReturnToGlobe = () => {
     setViewMode("globe");
     setSelectedStar(null);
+    setCameraTarget(null);
+    clearSelection();
   };
 
   const handleSearchConstellation = (
@@ -51,7 +57,8 @@ export function SidePanel() {
   const selectConstellationAndView = async (id: number) => {
     await fetchConstellationDetailAndLocation(id, timestamp);
     // On recupere les nouvelles donnes
-    const { bestLocation } = useConstellationStore.getState();
+    const { bestLocation, selectedConstellation } =
+      useConstellationStore.getState();
     if (bestLocation) {
       // 1. Simuler ou recupérer le point d'observation correspondant au bestLocation
       const point = {
@@ -67,11 +74,45 @@ export function SidePanel() {
 
       // 3. Basculer l'affichage
       setViewMode("sky");
-      fetchVisibleStars(
+      await fetchVisibleStars(
         bestLocation.latitude,
         bestLocation.longitude,
         timestamp,
       );
+
+      // 4. Calculer le barycentre 3D de la constellation pour orienter la caméra
+      const currentStars = useSkyStore.getState().stars;
+      if (selectedConstellation?.lines_data && currentStars.length > 0) {
+        try {
+          const pairs: [number, number][] = JSON.parse(
+            selectedConstellation.lines_data,
+          );
+          const RADIUS = 15;
+          let cx = 0,
+            cy = 0,
+            cz = 0,
+            count = 0;
+
+          const hipIds = new Set(pairs.flat());
+          for (const hipId of hipIds) {
+            const star = currentStars.find((s) => s.hip_id === hipId);
+            if (star) {
+              const altRad = (star.altitude * Math.PI) / 180;
+              const azRad = ((-star.azimuth + 90) * Math.PI) / 180;
+              cx += RADIUS * Math.cos(altRad) * Math.cos(azRad);
+              cy += RADIUS * Math.sin(altRad);
+              cz += RADIUS * Math.cos(altRad) * -Math.sin(azRad);
+              count++;
+            }
+          }
+
+          if (count > 0) {
+            setCameraTarget([cx / count, cy / count, cz / count]);
+          }
+        } catch (e) {
+          console.error("Erreur calcul barycentre constellation", e);
+        }
+      }
     }
   };
 

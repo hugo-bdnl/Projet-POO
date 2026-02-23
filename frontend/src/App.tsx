@@ -1,5 +1,5 @@
 import { Suspense, useEffect, useState, useRef } from "react";
-import { Canvas } from "@react-three/fiber";
+import { Canvas, useFrame } from "@react-three/fiber";
 import { OrbitControls } from "@react-three/drei";
 import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
 import { Globe } from "./components/Globe";
@@ -8,10 +8,55 @@ import { NightSky } from "./components/NightSky";
 import { Effects } from "./components/Effects";
 import { StarTooltip } from "./components/StarTooltip";
 import { TimeSlider } from "./components/TimeSlider";
+import { ConstellationGuide } from "./components/ConstellationGuide";
 import { useSkyStore } from "./stores/useSkyStore";
 import { useConstellationStore } from "./stores/useConstellationStore";
 import { useObservationStore } from "./stores/useObservationStore";
+import * as THREE from "three";
 import "./App.css";
+
+/**
+ * Composant interne (dans le Canvas) qui gère les transitions de caméra
+ * entre les modes globe et ciel. Le lerp s'arrête après 1.5s
+ * pour laisser le contrôle total à l'utilisateur.
+ */
+function CameraController({
+  controlsRef,
+}: {
+  controlsRef: React.RefObject<OrbitControlsImpl | null>;
+}) {
+  const { viewMode } = useSkyStore();
+  const transitionTime = useRef(0);
+  const prevMode = useRef(viewMode);
+
+  useFrame((state, delta) => {
+    // Reset le timer quand le mode change
+    if (prevMode.current !== viewMode) {
+      transitionTime.current = 0;
+      prevMode.current = viewMode;
+    }
+
+    transitionTime.current += delta;
+
+    // Transition terminée → l'utilisateur a le contrôle
+    if (transitionTime.current > 1.5) return;
+    if (!controlsRef.current) return;
+
+    const lerpFactor = 1.0 - Math.exp(-3.0 * delta);
+
+    if (viewMode === "sky") {
+      // Position caméra à l'origine pour vue immersive (horizon)
+      state.camera.position.lerp(new THREE.Vector3(0, -0.15, 0.1), lerpFactor);
+      controlsRef.current.target.lerp(new THREE.Vector3(0, 0, 0), lerpFactor);
+    } else {
+      // Mode Globe : orbite lointaine
+      state.camera.position.lerp(new THREE.Vector3(0, 0, 2.5), lerpFactor);
+      controlsRef.current.target.lerp(new THREE.Vector3(0, 0, 0), lerpFactor);
+    }
+  });
+
+  return null;
+}
 
 function App() {
   const { viewMode, stars, error: skyError } = useSkyStore();
@@ -31,17 +76,14 @@ function App() {
     }
   }, [skyError, constellationError, obsError]);
 
-  // Réglage du zoom (OrbitControls) pour contrer le bug de transition
+  // Réglage du zoom (OrbitControls) selon le mode de vue
   useEffect(() => {
     if (controlsRef.current) {
       if (viewMode === "globe") {
-        // En mode Globe, on encadre le zoom
-        controlsRef.current.target.set(0, 0, 0);
         controlsRef.current.minDistance = 1.2;
         controlsRef.current.maxDistance = 10;
       } else {
-        // En mode Ciel, c'est une vue à la 1re personne, la distance est quasi 0
-        controlsRef.current.target.set(0, 0, 0);
+        // En mode Ciel, vue 1re personne, distance quasi 0
         controlsRef.current.minDistance = 0.05;
         controlsRef.current.maxDistance = Infinity;
       }
@@ -99,10 +141,12 @@ function App() {
           {viewMode === "globe" ? <Globe /> : <NightSky />}
           <StarTooltip />
           {viewMode === "sky" && <Effects />}
+          {viewMode === "sky" && <ConstellationGuide />}
         </Suspense>
 
         {/* Contrôles de caméra avec damping (fluidité de mouvement) */}
         <OrbitControls ref={controlsRef} enableDamping dampingFactor={0.05} />
+        <CameraController controlsRef={controlsRef} />
       </Canvas>
     </div>
   );

@@ -22,6 +22,8 @@ interface SkyState {
   ) => Promise<void>;
   setHoveredStar: (star: VisibleStar | null) => void;
   setSelectedStar: (star: VisibleStar | null) => void;
+  cameraTarget: [number, number, number] | null;
+  setCameraTarget: (target: [number, number, number] | null) => void;
 }
 
 export const useSkyStore = create<SkyState>((set) => ({
@@ -55,4 +57,7 @@ export const useSkyStore = create<SkyState>((set) => ({
 
   setHoveredStar: (star) => set({ hoveredStar: star }),
   setSelectedStar: (star) => set({ selectedStar: star }),
+
+  cameraTarget: null,
+  setCameraTarget: (target) => set({ cameraTarget: target }),
 }));
