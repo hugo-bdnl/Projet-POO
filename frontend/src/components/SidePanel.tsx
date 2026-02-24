@@ -1,6 +1,8 @@
+import { useRef } from "react";
 import { useObservationStore } from "../stores/useObservationStore";
 import { useSkyStore } from "../stores/useSkyStore";
 import { useConstellationStore } from "../stores/useConstellationStore";
+import { altAzToXYZ, SKY_RADIUS } from "../utils/skyCoords";
 
 export function SidePanel() {
   const { selectedPoint, setSelectedPoint } = useObservationStore();
@@ -47,11 +49,17 @@ export function SidePanel() {
     clearSelection();
   };
 
+  // Debounce 300ms — évite de déclencher un appel API à chaque frappe
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const handleSearchConstellation = (
     e: React.ChangeEvent<HTMLInputElement>,
   ) => {
     setSearchQuery(e.target.value);
-    searchConstellations();
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      searchConstellations();
+    }, 300);
   };
 
   const selectConstellationAndView = async (id: number) => {
@@ -87,21 +95,31 @@ export function SidePanel() {
           const pairs: [number, number][] = JSON.parse(
             selectedConstellation.lines_data,
           );
-          const RADIUS = 15;
+          const RADIUS = SKY_RADIUS;
           let cx = 0,
             cy = 0,
             cz = 0,
             count = 0;
 
+          // Index par hip_id pour des lookups O(1)
+          const starsByHip = new Map(
+            currentStars
+              .filter((s) => s.hip_id !== null)
+              .map((s) => [s.hip_id!, s]),
+          );
+
           const hipIds = new Set(pairs.flat());
           for (const hipId of hipIds) {
-            const star = currentStars.find((s) => s.hip_id === hipId);
+            const star = starsByHip.get(hipId);
             if (star) {
-              const altRad = (star.altitude * Math.PI) / 180;
-              const azRad = ((-star.azimuth + 90) * Math.PI) / 180;
-              cx += RADIUS * Math.cos(altRad) * Math.cos(azRad);
-              cy += RADIUS * Math.sin(altRad);
-              cz += RADIUS * Math.cos(altRad) * -Math.sin(azRad);
+              const [sx, sy, sz] = altAzToXYZ(
+                star.altitude,
+                star.azimuth,
+                RADIUS,
+              );
+              cx += sx;
+              cy += sy;
+              cz += sz;
               count++;
             }
           }

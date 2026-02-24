@@ -4,6 +4,7 @@ import { useFrame } from "@react-three/fiber";
 import { useSkyStore } from "../stores/useSkyStore";
 import { useConstellationStore } from "../stores/useConstellationStore";
 import type { VisibleStar } from "../types";
+import { altAzToXYZ, SKY_RADIUS } from "../utils/skyCoords";
 import { CompassRose } from "./CompassRose";
 import { ConstellationPattern } from "./ConstellationPattern";
 
@@ -69,17 +70,11 @@ export const NightSky = () => {
     const highlightsData: number[] = [];
     const starMapData = new Map<number, VisibleStar>();
 
-    const RADIUS = 15;
     const hasConstellation =
       constellationHipIds !== null && constellationHipIds.size > 0;
 
     stars.forEach((star, index) => {
-      const altRad = THREE.MathUtils.degToRad(star.altitude);
-      const azRad = THREE.MathUtils.degToRad(-star.azimuth + 90);
-
-      const x = RADIUS * Math.cos(altRad) * Math.cos(azRad);
-      const y = RADIUS * Math.sin(altRad);
-      const z = RADIUS * Math.cos(altRad) * -Math.sin(azRad);
+      const [x, y, z] = altAzToXYZ(star.altitude, star.azimuth, SKY_RADIUS);
 
       positionsData.push(x, y, z);
 

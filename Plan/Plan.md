@@ -599,6 +599,20 @@ all_altaz = all_coords.transform_to(altaz_frame)
    - La barre de texte de recherche existante (à droite) reste intacte.
 5. [ ] **Gérer les couleurs** de l'interface et du rendu pour un meilleur esthétisme.
 
+**Priorité 1 — Améliorations de Performances** :
+
+1. ✅ **Vectoriser `best-location`** : L'endpoint `GET /api/constellations/{id}/best-location` effectue 50 appels AstroPy séquentiels (`compute_single_position` par point d'observation). Créer un seul array de 50 `EarthLocation` + un seul `SkyCoord` + un seul `transform_to()` pour passer de ~2-5s à ~100ms.
+2. ✅ **Indexer les étoiles par `hip_id` côté frontend** : `ConstellationPattern.tsx` et `SidePanel.tsx` utilisent `stars.find()` (O(n)) pour chaque étoile d'une constellation → ~300k comparaisons. Remplacer par une `Map<number, VisibleStar>` indexée par `hip_id` pour des lookups O(1).
+3. ✅ **Debounce sur la recherche constellation** : Chaque caractère tapé dans la barre de recherche déclenche un appel API immédiat. Ajouter un debounce de 300ms pour réduire la charge serveur et améliorer l'UX.
+4. ✅ **Extraire les `THREE.Vector3` constants hors de `useFrame`** : Dans `App.tsx`, `CameraController` crée 2 objets `new THREE.Vector3()` à chaque frame (120 allocations/s). Les déclarer en `useMemo` ou en constantes module-level.
+
+**Priorité 2 — Améliorations Architecturales** :
+
+5. ✅ **Ajouter un index SQL composite `(magnitude, dec)`** sur la table `stars` pour accélérer le pré-filtrage dans `get_by_magnitude_and_declination()`.
+6. ✅ **Utiliser le cache statique** pour `get_all_constellations()` — les constellations sont 100% statiques mais ne sont pas cachées actuellement.
+7. ✅ **Factoriser la conversion Alt/Az → Vector3D** — logique dupliquée dans `NightSky.tsx`, `ConstellationPattern.tsx`, et `SidePanel.tsx`.
+8. ✅ **Corriger la gestion de session DB dans `health_check`** — utiliser `get_db()` ou un context manager au lieu du `SessionLocal()` + `db.close()` manuel qui peut fuiter en cas d'exception.
+
 ---
 
 ### SEMAINE 13 : DÉPLOIEMENT & PRÉSENTATION

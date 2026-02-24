@@ -3,7 +3,7 @@ Modèle SQLAlchemy représentant une étoile du catalogue HYG.
 Stocke les propriétés intrinsèques (position, magnitude, type spectral, etc.).
 """
 
-from sqlalchemy import Column, Integer, Float, String
+from sqlalchemy import Column, Integer, Float, String, Index
 from sqlalchemy.orm import relationship
 
 from app.database import Base
@@ -18,6 +18,11 @@ class Star(Base):
     """
 
     __tablename__ = "stars"
+
+    # Index composite pour accélérer le pré-filtrage (magnitude + déclinaison)
+    __table_args__ = (
+        Index("idx_star_mag_dec", "magnitude", "dec"),
+    )
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     hip_id = Column(Integer, index=True, nullable=True, doc="Identifiant Hipparcos")

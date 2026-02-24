@@ -3,6 +3,7 @@ import * as THREE from "three";
 import { Line, Text } from "@react-three/drei";
 import { useConstellationStore } from "../stores/useConstellationStore";
 import { useSkyStore } from "../stores/useSkyStore";
+import { altAzToVector3, SKY_RADIUS } from "../utils/skyCoords";
 
 export const ConstellationPattern = () => {
   const { selectedConstellation } = useConstellationStore();
@@ -23,31 +24,22 @@ export const ConstellationPattern = () => {
         selectedConstellation.lines_data,
       );
 
+      // Index par hip_id pour des lookups O(1) au lieu de O(n)
+      const starsByHip = new Map(
+        stars.filter((s) => s.hip_id !== null).map((s) => [s.hip_id!, s]),
+      );
+
       const lineGeometrySegments: THREE.Vector3[][] = [];
       const labelPosition = new THREE.Vector3(0, 0, 0);
       let loadedStarsCount = 0;
 
-      // Distance arbitraire sur la voûte céleste (identique à NightSky)
-      const RADIUS = 15;
-
       pairs.forEach(([hip1, hip2]) => {
-        const star1 = stars.find((s) => s.hip_id === hip1);
-        const star2 = stars.find((s) => s.hip_id === hip2);
+        const star1 = starsByHip.get(hip1);
+        const star2 = starsByHip.get(hip2);
 
         if (star1 && star2) {
-          // Conversion Alt/Az -> Vecteur 3D
-          const getPos = (star: { altitude: number; azimuth: number }) => {
-            const altRad = THREE.MathUtils.degToRad(star.altitude);
-            const azRad = THREE.MathUtils.degToRad(-star.azimuth + 90);
-            return new THREE.Vector3(
-              RADIUS * Math.cos(altRad) * Math.cos(azRad),
-              RADIUS * Math.sin(altRad), // Hauteur
-              RADIUS * Math.cos(altRad) * -Math.sin(azRad),
-            );
-          };
-
-          const p1 = getPos(star1);
-          const p2 = getPos(star2);
+          const p1 = altAzToVector3(star1.altitude, star1.azimuth, SKY_RADIUS);
+          const p2 = altAzToVector3(star2.altitude, star2.azimuth, SKY_RADIUS);
 
           lineGeometrySegments.push([p1, p2]);
 

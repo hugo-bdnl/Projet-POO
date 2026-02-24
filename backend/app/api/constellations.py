@@ -11,6 +11,7 @@ from app.database import get_db
 from app.repositories.constellation_repository import ConstellationRepository
 from app.repositories.observation_point_repository import ObservationPointRepository
 from app.services.astronomy_service import AstronomyService
+from app.services.cache_service import CacheService
 from app.schemas.constellation import (
     ConstellationListResponse,
     ConstellationDetailResponse,
@@ -19,17 +20,28 @@ from app.schemas.constellation import (
 
 router = APIRouter(prefix="/api/constellations", tags=["Constellations"])
 
+# Cache partagé pour les données statiques (constellations)
+_cache = CacheService()
+
 
 @router.get("", response_model=list[ConstellationListResponse])
 def get_all_constellations(db: Session = Depends(get_db)):
     """
     Retourne la liste des 88 constellations IAU.
+    Résultat mis en cache statique (TTL 24h) car les données ne changent jamais.
 
     @param db: Session SQLAlchemy (injection)
     @return: Liste des constellations avec nom et abréviation
     """
+    cached = _cache.get_static("all_constellations")
+    if cached is not None:
+        return cached
+
     repo = ConstellationRepository(db)
-    return repo.get_all()
+    result = repo.get_all()
+
+    _cache.set_static("all_constellations", result)
+    return result
 
 
 @router.get("/search", response_model=list[ConstellationListResponse])
@@ -126,30 +138,25 @@ def get_best_observation_point(
             detail="Coordonnées du centre de la constellation non disponibles",
         )
 
-    # Calcul de l'altitude depuis chaque point d'observation
+    # Calcul vectorisé de l'altitude depuis TOUS les points d'observation
     obs_repo = ObservationPointRepository(db)
     points = obs_repo.get_all()
 
-    best_point = None
-    best_altitude = -90.0
+    result = AstronomyService.compute_best_observation_point(
+        ra=constellation.center_ra,
+        dec=constellation.center_dec,
+        points=points,
+        timestamp=timestamp,
+    )
 
-    for point in points:
-        position = AstronomyService.compute_single_position(
-            ra=constellation.center_ra,
-            dec=constellation.center_dec,
-            latitude=point.latitude,
-            longitude=point.longitude,
-            timestamp=timestamp,
-        )
-        if position["altitude"] > best_altitude:
-            best_altitude = position["altitude"]
-            best_point = point
-
-    if best_point is None or best_altitude <= 0:
+    if result is None:
         raise HTTPException(
             status_code=404,
             detail="Aucun point d'observation ne permet de voir cette constellation actuellement",
         )
+
+    best_point = result["point"]
+    best_altitude = result["altitude"]
 
     # Score de visibilité : 0-100 basé sur l'altitude (90° = score max)
     visibility_score = min(100.0, max(0.0, (best_altitude / 90.0) * 100.0))

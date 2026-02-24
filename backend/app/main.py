@@ -74,18 +74,23 @@ def health_check():
 
     @return: Statut de l'application et de ses dépendances
     """
-    from app.database import SessionLocal
+    from app.database import get_db
     from app.repositories.star_repository import StarRepository
 
+    db_gen = get_db()
+    db = next(db_gen)
     try:
-        db = SessionLocal()
         repo = StarRepository(db)
         star_count = repo.count()
-        db.close()
         db_status = "connected"
     except Exception as e:
         star_count = 0
         db_status = f"error: {str(e)}"
+    finally:
+        try:
+            next(db_gen)
+        except StopIteration:
+            pass
 
     return {
         "status": "healthy" if db_status == "connected" else "degraded",

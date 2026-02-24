@@ -20,6 +20,12 @@ import "./App.css";
  * entre les modes globe et ciel. Le lerp s'arrête après 1.5s
  * pour laisser le contrôle total à l'utilisateur.
  */
+
+// Vecteurs cibles pré-alloués (évite 120 allocations/s dans useFrame)
+const SKY_CAMERA_POS = new THREE.Vector3(0, -0.15, 0.1);
+const GLOBE_CAMERA_POS = new THREE.Vector3(0, 0, 2.5);
+const ORIGIN = new THREE.Vector3(0, 0, 0);
+
 function CameraController({
   controlsRef,
 }: {
@@ -46,12 +52,12 @@ function CameraController({
 
     if (viewMode === "sky") {
       // Position caméra à l'origine pour vue immersive (horizon)
-      state.camera.position.lerp(new THREE.Vector3(0, -0.15, 0.1), lerpFactor);
-      controlsRef.current.target.lerp(new THREE.Vector3(0, 0, 0), lerpFactor);
+      state.camera.position.lerp(SKY_CAMERA_POS, lerpFactor);
+      controlsRef.current.target.lerp(ORIGIN, lerpFactor);
     } else {
       // Mode Globe : orbite lointaine
-      state.camera.position.lerp(new THREE.Vector3(0, 0, 2.5), lerpFactor);
-      controlsRef.current.target.lerp(new THREE.Vector3(0, 0, 0), lerpFactor);
+      state.camera.position.lerp(GLOBE_CAMERA_POS, lerpFactor);
+      controlsRef.current.target.lerp(ORIGIN, lerpFactor);
     }
   });
 

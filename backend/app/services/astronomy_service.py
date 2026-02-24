@@ -151,3 +151,62 @@ class AstronomyService:
             "altitude": round(float(altaz.alt.degree), 4),
             "visible": bool(altaz.alt.degree > 0),
         }
+
+    @staticmethod
+    def compute_best_observation_point(
+        ra: float,
+        dec: float,
+        points: list,
+        timestamp: datetime,
+    ) -> dict | None:
+        """
+        Trouve le meilleur point d'observation pour un objet céleste
+        en calculant l'altitude depuis TOUS les points en un seul
+        appel vectorisé AstroPy (au lieu d'une boucle séquentielle).
+
+        @param ra: Ascension droite de l'objet (degrés, J2000)
+        @param dec: Déclinaison de l'objet (degrés, J2000)
+        @param points: Liste de points d'observation (avec .latitude, .longitude)
+        @param timestamp: Temps d'observation UTC
+        @return: Dict {point, altitude} du meilleur point, ou None
+        """
+        if not points:
+            return None
+
+        # Arrays vectorisés de toutes les positions d'observation
+        lat_array = np.array([p.latitude for p in points], dtype=np.float64)
+        lon_array = np.array([p.longitude for p in points], dtype=np.float64)
+
+        # Création vectorisée de TOUTES les EarthLocation en un seul appel
+        locations = EarthLocation(
+            lat=lat_array * u.degree,
+            lon=lon_array * u.degree,
+        )
+
+        obs_time = Time(timestamp)
+
+        # Un AltAz frame par location (vectorisé nativement par AstroPy)
+        altaz_frames = AltAz(obstime=obs_time, location=locations)
+
+        # Un seul SkyCoord pour l'objet céleste
+        sky_coord = SkyCoord(
+            ra=ra * u.degree,
+            dec=dec * u.degree,
+            frame="icrs",
+        )
+
+        # Transformation vectorisée — TOUTES les locations en un seul appel
+        altaz_coords = sky_coord.transform_to(altaz_frames)
+        altitudes = altaz_coords.alt.degree
+
+        # Trouver le meilleur point (altitude maximale)
+        best_idx = int(np.argmax(altitudes))
+        best_altitude = float(altitudes[best_idx])
+
+        if best_altitude <= 0:
+            return None
+
+        return {
+            "point": points[best_idx],
+            "altitude": best_altitude,
+        }
