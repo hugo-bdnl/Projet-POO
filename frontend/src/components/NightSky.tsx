@@ -128,15 +128,22 @@ export const NightSky = () => {
         ref={pointsRef}
         onPointerOver={(e) => {
           e.stopPropagation();
-          if (e.index !== undefined) {
-            setHoveredStar(starMap.get(e.index) || null);
+          // Trier par distance pour sélectionner l'étoile la plus proche de la caméra
+          const closest = e.intersections.sort(
+            (a, b) => a.distance - b.distance,
+          )[0];
+          if (closest?.index !== undefined) {
+            setHoveredStar(starMap.get(closest.index) || null);
           }
         }}
         onPointerOut={() => setHoveredStar(null)}
         onClick={(e) => {
           e.stopPropagation();
-          if (e.index !== undefined) {
-            setSelectedStar(starMap.get(e.index) || null);
+          const closest = e.intersections.sort(
+            (a, b) => a.distance - b.distance,
+          )[0];
+          if (closest?.index !== undefined) {
+            setSelectedStar(starMap.get(closest.index) || null);
           }
         }}
       >

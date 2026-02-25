@@ -569,13 +569,6 @@ all_altaz = all_coords.transform_to(altaz_frame)
    - Tests composants React (Jest)
 8. ✅ **Refactoring** : respect SOLID, DRY, typage strict
 
-**Ajouts visuels (bonus)** :
-
-- Voie lactée texture ESA
-- Grille azimut/altitude (toggle)
-- ✅ Compteur étoiles visibles en temps réel
-- Mode jour/nuit sur le globe (terminateur dynamique)
-
 **Livrable semaine 11** :
 
 - Application polie, fluide, professionnelle
@@ -592,12 +585,11 @@ all_altaz = all_coords.transform_to(altaz_frame)
 
 1. ✅ **Régler le problème de luminosité** globale (des étoiles et de l'environnement).
 2. ✅ **Caméra intelligente au clic Constellation** : Orienter précisément la caméra face au pattern 3D de la constellation recherchée au lieu d'une orientation fixe.
-3. [ ] **Modifier les contrôles caméra** : Permettre une exploration plus libre et intuitive du cosmos.
-4. [ ] **Mécanique de recherche visuelle des constellations** :
+3. [ ] **Mécanique de recherche visuelle des constellations** :
    - Ajouter une "sidebar" (barre latérale) à gauche de la Terre.
    - Celle-ci comprendra une liste déroulante avec les images des formes géométriques de chaque constellation et leur nom en dessous.
    - La barre de texte de recherche existante (à droite) reste intacte.
-5. [ ] **Gérer les couleurs** de l'interface et du rendu pour un meilleur esthétisme.
+4. [ ] **Gérer les couleurs** de l'interface et du rendu pour un meilleur esthétisme.
 
 **Priorité 1 — Améliorations de Performances** :
 
@@ -614,6 +606,13 @@ all_altaz = all_coords.transform_to(altaz_frame)
 8. ✅ **Corriger la gestion de session DB dans `health_check`** — utiliser `get_db()` ou un context manager au lieu du `SessionLocal()` + `db.close()` manuel qui peut fuiter en cas d'exception.
 
 ---
+
+**Ajouts visuels (bonus)** :
+
+- Voie lactée texture ESA
+- Grille azimut/altitude (toggle)
+- ✅ Compteur étoiles visibles en temps réel
+- Mode jour/nuit sur le globe (terminateur dynamique)
 
 ### SEMAINE 13 : DÉPLOIEMENT & PRÉSENTATION
 

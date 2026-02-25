@@ -105,6 +105,7 @@ class AstronomyService:
                     "magnitude": star.magnitude,
                     "spectral_type": star.spectral_type,
                     "constellation_abbr": star.constellation_abbr,
+                    "distance_ly": star.distance_ly,
                     "azimuth": round(float(azimuths[i]), 4),
                     "altitude": round(float(altitudes[i]), 4),
                 })

@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useRef, useEffect } from "react";
 import { useObservationStore } from "../stores/useObservationStore";
 import { useSkyStore } from "../stores/useSkyStore";
 import { useConstellationStore } from "../stores/useConstellationStore";
@@ -27,7 +27,16 @@ export function SidePanel() {
     fetchConstellationDetailAndLocation,
     loadingDetail,
     clearSelection,
+    constellationNameMap,
+    fetchConstellationNames,
   } = useConstellationStore();
+
+  // Charger la table de correspondance abréviation → nom complet
+  useEffect(() => {
+    if (viewMode === "sky") {
+      fetchConstellationNames();
+    }
+  }, [viewMode, fetchConstellationNames]);
 
   const handleObserveSky = () => {
     if (selectedPoint) {
@@ -307,7 +316,19 @@ export function SidePanel() {
                   <div className="info-group">
                     <span className="label">Constellation</span>
                     <span className="value">
-                      {selectedStar.constellation_abbr || "N/A"}
+                      {selectedStar.constellation_abbr
+                        ? constellationNameMap[
+                            selectedStar.constellation_abbr.toUpperCase()
+                          ] || selectedStar.constellation_abbr
+                        : "N/A"}
+                    </span>
+                  </div>
+                  <div className="info-group">
+                    <span className="label">Distance</span>
+                    <span className="value">
+                      {selectedStar.distance_ly != null
+                        ? `${selectedStar.distance_ly.toLocaleString("fr-FR", { maximumFractionDigits: 1 })} al`
+                        : "N/A"}
                     </span>
                   </div>
                   <div className="info-group">

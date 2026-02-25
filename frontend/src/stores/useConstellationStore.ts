@@ -14,6 +14,8 @@ interface ConstellationState {
   bestLocation: BestLocation | null;
   loadingDetail: boolean;
   error: string | null;
+  /** Mapping abréviation → nom complet (fr de préférence) */
+  constellationNameMap: Record<string, string>;
 
   setSearchQuery: (q: string) => void;
   searchConstellations: () => Promise<void>;
@@ -22,6 +24,8 @@ interface ConstellationState {
     timestamp?: string,
   ) => Promise<void>;
   clearSelection: () => void;
+  /** Charge la table de correspondance abréviation → nom complet (une seule fois) */
+  fetchConstellationNames: () => Promise<void>;
 }
 
 export const useConstellationStore = create<ConstellationState>((set, get) => ({
@@ -32,6 +36,7 @@ export const useConstellationStore = create<ConstellationState>((set, get) => ({
   bestLocation: null,
   loadingDetail: false,
   error: null,
+  constellationNameMap: {},
 
   setSearchQuery: (q) => set({ searchQuery: q }),
 
@@ -79,6 +84,21 @@ export const useConstellationStore = create<ConstellationState>((set, get) => ({
             : "Impossible de charger la constellation",
         loadingDetail: false,
       });
+    }
+  },
+
+  fetchConstellationNames: async () => {
+    // Ne charger qu'une seule fois
+    if (Object.keys(get().constellationNameMap).length > 0) return;
+    try {
+      const list = await astronomyService.getConstellations();
+      const map: Record<string, string> = {};
+      for (const c of list) {
+        map[c.abbreviation] = c.name_fr || c.name;
+      }
+      set({ constellationNameMap: map });
+    } catch {
+      // Silencieux : on affichera l'abréviation en fallback
     }
   },
 

@@ -13,6 +13,7 @@ export interface VisibleStar {
   magnitude: number;
   spectral_type: string | null;
   constellation_abbr: string | null;
+  distance_ly: number | null;
   azimuth: number;
   altitude: number;
 }

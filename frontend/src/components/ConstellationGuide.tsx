@@ -17,17 +17,17 @@ export const ConstellationGuide = () => {
 
   const arrowRef = useRef<HTMLDivElement>(null);
   const groupRef = useRef<THREE.Group>(null);
+  // Vecteurs pré-alloués pour éviter les allocations dans useFrame (GC pressure)
+  const targetVec = useRef(new THREE.Vector3());
+  const projectedVec = useRef(new THREE.Vector3());
 
   useFrame(() => {
     if (!arrowRef.current || !cameraTarget || viewMode !== "sky") return;
 
     // Projeter le barycentre en coordonnées écran normalisées (NDC)
-    const target = new THREE.Vector3(
-      cameraTarget[0],
-      cameraTarget[1],
-      cameraTarget[2],
-    );
-    const projected = target.clone().project(camera);
+    targetVec.current.set(cameraTarget[0], cameraTarget[1], cameraTarget[2]);
+    projectedVec.current.copy(targetVec.current).project(camera);
+    const projected = projectedVec.current;
 
     // NDC : x et y dans [-1, 1], z < 1 = devant la caméra
     const isOnScreen =

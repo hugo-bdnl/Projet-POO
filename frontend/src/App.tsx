@@ -136,9 +136,9 @@ function App() {
       {/* Contrôle Temporel - Ciel Nocturne */}
       <TimeSlider />
 
-      <Canvas camera={{ position: [0, 0, 3], fov: 50 }}>
+      <Canvas camera={{ position: [0, 0, 3], fov: 50 }} dpr={[1, 1.5]}>
+        <color attach="background" args={["#000000"]} />
         <ambientLight intensity={0.2} />
-        {/* Lumière directionnelle pour simuler le Soleil sur la Terre */}
         {viewMode === "globe" && (
           <directionalLight position={[5, 3, 5]} intensity={2} />
         )}

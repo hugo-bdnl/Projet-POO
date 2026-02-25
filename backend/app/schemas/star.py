@@ -48,6 +48,7 @@ class VisibleStarResponse(BaseModel):
     magnitude: float
     spectral_type: str | None = None
     constellation_abbr: str | None = None
+    distance_ly: float | None = Field(None, description="Distance en années-lumière")
 
     # Coordonnées horizontales calculées
     azimuth: float = Field(..., description="Azimut (degrés, 0=Nord, 90=Est)")

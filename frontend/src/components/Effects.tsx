@@ -21,8 +21,7 @@ export const Effects = () => {
       <Bloom
         luminanceThreshold={0.5}
         luminanceSmoothing={0.9}
-        intensity={1.5}
-        mipmapBlur
+        intensity={0.8}
       />
     </EffectComposer>
   );
