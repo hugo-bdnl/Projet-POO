@@ -13,6 +13,10 @@ interface LocationMarkerProps {
   radius?: number; // Rayon de la sphère terrestre (par défaut 1)
 }
 
+// Vecteurs d'échelle pré-alloués (évite l'instanciation dans la boucle de rendu useFrame)
+const SCALE_HOVERED = new THREE.Vector3(1.5, 1.5, 1.5);
+const SCALE_NORMAL = new THREE.Vector3(1, 1, 1);
+
 export function LocationMarker({
   id,
   lat,
@@ -41,12 +45,9 @@ export function LocationMarker({
   useFrame((_state, delta) => {
     if (meshRef.current) {
       if (hovered || isSelected) {
-        meshRef.current.scale.lerp(
-          new THREE.Vector3(1.5, 1.5, 1.5),
-          delta * 10,
-        );
+        meshRef.current.scale.lerp(SCALE_HOVERED, delta * 10);
       } else {
-        meshRef.current.scale.lerp(new THREE.Vector3(1, 1, 1), delta * 10);
+        meshRef.current.scale.lerp(SCALE_NORMAL, delta * 10);
       }
     }
   });
