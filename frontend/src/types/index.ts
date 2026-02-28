@@ -18,11 +18,21 @@ export interface VisibleStar {
   altitude: number;
 }
 
+export interface PatternStar {
+  hip_id: number;
+  ra: number;
+  dec: number;
+}
+
 export interface ConstellationListItem {
   id: number;
   name: string;
   abbreviation: string;
   name_fr: string | null;
+  center_ra: number | null;
+  center_dec: number | null;
+  lines_data: string | null;
+  pattern_stars: PatternStar[];
 }
 
 export interface ConstellationDetail extends ConstellationListItem {

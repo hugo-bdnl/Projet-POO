@@ -8,6 +8,7 @@ import type {
 
 interface ConstellationState {
   searchQuery: string;
+  allConstellations: ConstellationListItem[];
   results: ConstellationListItem[];
   loadingList: boolean;
   selectedConstellation: ConstellationDetail | null;
@@ -18,7 +19,7 @@ interface ConstellationState {
   constellationNameMap: Record<string, string>;
 
   setSearchQuery: (q: string) => void;
-  searchConstellations: () => Promise<void>;
+  fetchAllConstellations: () => Promise<void>;
   fetchConstellationDetailAndLocation: (
     id: number,
     timestamp?: string,
@@ -30,6 +31,7 @@ interface ConstellationState {
 
 export const useConstellationStore = create<ConstellationState>((set, get) => ({
   searchQuery: "",
+  allConstellations: [],
   results: [],
   loadingList: false,
   selectedConstellation: null,
@@ -40,20 +42,17 @@ export const useConstellationStore = create<ConstellationState>((set, get) => ({
 
   setSearchQuery: (q) => set({ searchQuery: q }),
 
-  searchConstellations: async () => {
-    const { searchQuery } = get();
-    if (searchQuery.length < 2) {
-      set({ results: [], error: null });
-      return;
-    }
+  fetchAllConstellations: async () => {
+    // Only fetch once
+    if (get().allConstellations.length > 0) return;
 
     set({ loadingList: true, error: null });
     try {
-      const data = await astronomyService.searchConstellations(searchQuery);
-      set({ results: data, loadingList: false });
+      const data = await astronomyService.getConstellations();
+      set({ allConstellations: data, results: data, loadingList: false });
     } catch (err: unknown) {
       set({
-        error: err instanceof Error ? err.message : "Erreur de recherche",
+        error: err instanceof Error ? err.message : "Erreur chargement des constellations",
         loadingList: false,
       });
     }

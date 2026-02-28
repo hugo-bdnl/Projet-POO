@@ -4,36 +4,35 @@
 
 ```bash
 # Depuis la racine du projet
-cd backend
 
-# Activer le venv
+# Activer le venv du backend (si nécessaire)
 # Windows :
-venv\Scripts\activate
+backend\venv\Scripts\activate
 # Linux/Mac :
-source venv/bin/activate
+source backend/venv/bin/activate
 
-# Lancer TOUS les tests
-python -m pytest tests/ -v
+# Lancer TOUS les tests backend
+python -m pytest -v
 
 # Lancer un fichier de test spécifique
-python -m pytest tests/test_observation_points.py -v
-python -m pytest tests/test_constellations.py -v
+python -m pytest tests/backend/test_observation_points.py -v
+python -m pytest tests/backend/test_constellations.py -v
 
 # Lancer avec couverture de code
-python -m pytest tests/ --cov=app --cov-report=term-missing
+python -m pytest --cov=backend/app --cov-report=term-missing
 
 # Lancer une classe de test précise
-python -m pytest tests/test_observation_points.py::TestKnownObservationPoints -v
+python -m pytest tests/backend/test_observation_points.py::TestKnownObservationPoints -v
 
 # Lancer un test unique
-python -m pytest tests/test_constellations.py::TestKnownConstellations::test_orion_exists -v
+python -m pytest tests/backend/test_constellations.py::TestKnownConstellations::test_orion_exists -v
 ```
 
 ---
 
 ## Inventaire des tests existants
 
-### `tests/test_observation_points.py` (~19 tests)
+### `tests/backend/test_observation_points.py` (~19 tests)
 
 | Classe                            | Tests | Description                                                                                                  |
 | --------------------------------- | ----- | ------------------------------------------------------------------------------------------------------------ |
@@ -42,7 +41,7 @@ python -m pytest tests/test_constellations.py::TestKnownConstellations::test_ori
 | `TestKnownObservationPoints`      | 5     | Paris, Tokyo, New York, Mauna Kea, Atacama existent avec coordonnées correctes                               |
 | `TestObservationPointsAPI`        | 8     | `GET /api/observation-points` : status 200, retourne liste de 50, champs requis, tri alpha, `GET /{id}`, 404 |
 
-### `tests/test_constellations.py` (~12 tests)
+### `tests/backend/test_constellations.py` (~12 tests)
 
 | Classe                              | Tests | Description                                                                                        |
 | ----------------------------------- | ----- | -------------------------------------------------------------------------------------------------- |
@@ -103,3 +102,21 @@ python -m pytest tests/test_constellations.py::TestKnownConstellations::test_ori
 
 - `GET /` → status 200, contient `status: "running"`
 - `GET /api/health` → status 200, contient `database`, `star_count`
+
+---
+
+## 💻 Tests Frontend (React / Vitest)
+
+Les tests frontend sont situés dans `tests/frontend/`. La configuration est faite via `vitest.config.ts` (à la racine) et utilise `@testing-library/react` combiné à `jsdom`.
+
+```bash
+# Depuis la racine du projet
+# Installez les dépendances de test à la racine si ce n'est pas déjà fait :
+npm install -D vitest @testing-library/react @testing-library/jest-dom jsdom @vitest/browser
+
+# Lancer la suite de test frontend
+npx vitest run
+
+# Mode interactif watch
+npx vitest
+```

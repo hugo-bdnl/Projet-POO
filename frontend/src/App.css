@@ -6,7 +6,8 @@
 
   color-scheme: light dark;
   color: #e2e8f0;
-  background-color: #050510; /* Espace Profond */
+  background-color: #050510;
+  /* Espace Profond */
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -20,7 +21,8 @@ body {
   place-items: center;
   min-width: 320px;
   min-height: 100vh;
-  overflow: hidden; /* Empêche le scroll autour du canvas */
+  overflow: hidden;
+  /* Empêche le scroll autour du canvas */
 }
 
 /* Container du Canvas Three.js */
@@ -34,7 +36,8 @@ body {
 .overlay-title {
   position: absolute;
   top: 1rem;
-  left: 1.5rem;
+  left: 50%;
+  transform: translateX(-50%);
   z-index: 10;
   font-size: 2rem;
   font-weight: 700;
@@ -48,7 +51,8 @@ body {
 .overlay-subtitle {
   position: absolute;
   top: 3.5rem;
-  left: 1.5rem;
+  left: 50%;
+  transform: translateX(-50%);
   z-index: 10;
   font-size: 1rem;
   color: #94a3b8;
@@ -66,10 +70,12 @@ body {
   width: 300px;
   max-height: calc(100vh - 4rem);
   overflow-y: auto;
-  background: rgba(10, 10, 20, 0.85); /* Plus sombre */
+  background: rgba(10, 10, 20, 0.85);
+  /* Plus sombre */
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(0, 240, 255, 0.2); /* Accent cyan subtil */
+  border: 1px solid rgba(0, 240, 255, 0.2);
+  /* Accent cyan subtil */
   border-radius: 16px;
   padding: 1.5rem;
   color: #f8fafc;
@@ -84,9 +90,11 @@ body {
 .side-panel::-webkit-scrollbar {
   width: 6px;
 }
+
 .side-panel::-webkit-scrollbar-track {
   background: rgba(255, 255, 255, 0.05);
 }
+
 .side-panel::-webkit-scrollbar-thumb {
   background: rgba(0, 240, 255, 0.3);
   border-radius: 3px;
@@ -97,6 +105,7 @@ body {
     opacity: 0;
     transform: translateX(30px);
   }
+
   to {
     opacity: 1;
     transform: translateX(0);
@@ -156,7 +165,8 @@ body {
 .info-group .value {
   font-size: 0.95rem;
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  color: #00f0ff; /* Accent Cyan Neon */
+  color: #00f0ff;
+  /* Accent Cyan Neon */
 }
 
 /* Boutons d'action */
@@ -184,7 +194,8 @@ body {
   bottom: 80px;
   left: 50%;
   transform: translateX(-50%);
-  background: rgba(220, 38, 38, 0.9); /* Rouge erreur */
+  background: rgba(220, 38, 38, 0.9);
+  /* Rouge erreur */
   color: white;
   padding: 12px 24px;
   border-radius: 8px;
@@ -201,10 +212,181 @@ body {
     opacity: 0;
     transform: translate(-50%, 20px) scale(0.9);
   }
+
   100% {
     opacity: 1;
     transform: translate(-50%, 0) scale(1);
   }
+}
+
+/* 
+  ------ STYLES CONSTELLATION SIDEBAR ------
+*/
+.constellation-sidebar {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 380px;
+  max-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: rgba(10, 10, 20, 0.85);
+  /* Plus sombre */
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-right: 1px solid rgba(0, 240, 255, 0.2);
+  /* Accent cyan subtil */
+  padding: 1.5rem;
+  color: #f8fafc;
+  z-index: 20;
+  box-sizing: border-box;
+  box-shadow:
+    8px 0 32px rgba(0, 0, 0, 0.6),
+    2px 0 10px rgba(0, 240, 255, 0.1);
+  animation: slideFadeInLeft 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes slideFadeInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-30px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.sidebar-header h2 {
+  font-size: 1.25rem;
+  margin-top: 0;
+  margin-bottom: 1rem;
+  color: #e2e8f0;
+}
+
+.sidebar-search {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.3);
+  color: white;
+  font-family: inherit;
+  margin-bottom: 1rem;
+  transition: border-color 0.2s;
+  box-sizing: border-box;
+}
+
+.sidebar-search:focus {
+  outline: none;
+  border-color: rgba(0, 240, 255, 0.5);
+}
+
+.sidebar-content {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+  padding-right: 4px;
+}
+
+.sidebar-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.sidebar-content::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.sidebar-content::-webkit-scrollbar-thumb {
+  background: rgba(0, 240, 255, 0.3);
+  border-radius: 3px;
+}
+
+.constellation-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.constellation-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  padding: 12px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.constellation-card:hover {
+  background: rgba(0, 240, 255, 0.05);
+  border-color: rgba(0, 240, 255, 0.3);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 240, 255, 0.1);
+}
+
+.constellation-card.loading {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.miniature-container {
+  width: 100%;
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.constellation-svg {
+  width: 80%;
+  height: 80%;
+}
+
+.miniature-fallback {
+  font-size: 2rem;
+  opacity: 0.5;
+}
+
+.card-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  width: 100%;
+}
+
+.card-name {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #e2e8f0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 100%;
+}
+
+.card-abbr {
+  font-size: 0.7rem;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.loading-text,
+.no-results {
+  text-align: center;
+  color: #888;
+  font-size: 0.9em;
+  margin-top: 1rem;
 }
 
 /* Responsive (Mobile Bottom Sheet) */
@@ -220,7 +402,8 @@ body {
     border: none;
     border-top: 1px solid rgba(0, 240, 255, 0.2);
     animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-    padding-bottom: 2rem; /* Espace safe area ios */
+    padding-bottom: 2rem;
+    /* Espace safe area ios */
     box-sizing: border-box;
   }
 
@@ -229,6 +412,7 @@ body {
       transform: translateY(100%);
       opacity: 0;
     }
+
     to {
       transform: translateY(0);
       opacity: 1;

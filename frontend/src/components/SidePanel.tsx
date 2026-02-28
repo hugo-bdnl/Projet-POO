@@ -1,8 +1,7 @@
-import { useRef, useEffect } from "react";
+import { useEffect } from "react";
 import { useObservationStore } from "../stores/useObservationStore";
 import { useSkyStore } from "../stores/useSkyStore";
 import { useConstellationStore } from "../stores/useConstellationStore";
-import { altAzToXYZ, SKY_RADIUS } from "../utils/skyCoords";
 
 export function SidePanel() {
   const { selectedPoint, setSelectedPoint } = useObservationStore();
@@ -19,12 +18,6 @@ export function SidePanel() {
   } = useSkyStore();
 
   const {
-    searchQuery,
-    setSearchQuery,
-    searchConstellations,
-    results,
-    loadingList,
-    fetchConstellationDetailAndLocation,
     loadingDetail,
     clearSelection,
     constellationNameMap,
@@ -58,90 +51,7 @@ export function SidePanel() {
     clearSelection();
   };
 
-  // Debounce 300ms — évite de déclencher un appel API à chaque frappe
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const handleSearchConstellation = (
-    e: React.ChangeEvent<HTMLInputElement>,
-  ) => {
-    setSearchQuery(e.target.value);
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => {
-      searchConstellations();
-    }, 300);
-  };
-
-  const selectConstellationAndView = async (id: number) => {
-    await fetchConstellationDetailAndLocation(id, timestamp);
-    // On recupere les nouvelles donnes
-    const { bestLocation, selectedConstellation } =
-      useConstellationStore.getState();
-    if (bestLocation) {
-      // 1. Simuler ou recupérer le point d'observation correspondant au bestLocation
-      const point = {
-        id: bestLocation.observation_point_id,
-        name: bestLocation.observation_point_name,
-        latitude: bestLocation.latitude,
-        longitude: bestLocation.longitude,
-        timezone: "UTC", // Fallback, on n'a plus forcément la timezone
-      };
-
-      // 2. Mettre ce point comme selected pour la vue
-      setSelectedPoint(point);
-
-      // 3. Basculer l'affichage
-      setViewMode("sky");
-      await fetchVisibleStars(
-        bestLocation.latitude,
-        bestLocation.longitude,
-        timestamp,
-      );
-
-      // 4. Calculer le barycentre 3D de la constellation pour orienter la caméra
-      const currentStars = useSkyStore.getState().stars;
-      if (selectedConstellation?.lines_data && currentStars.length > 0) {
-        try {
-          const pairs: [number, number][] = JSON.parse(
-            selectedConstellation.lines_data,
-          );
-          const RADIUS = SKY_RADIUS;
-          let cx = 0,
-            cy = 0,
-            cz = 0,
-            count = 0;
-
-          // Index par hip_id pour des lookups O(1)
-          const starsByHip = new Map(
-            currentStars
-              .filter((s) => s.hip_id !== null)
-              .map((s) => [s.hip_id!, s]),
-          );
-
-          const hipIds = new Set(pairs.flat());
-          for (const hipId of hipIds) {
-            const star = starsByHip.get(hipId);
-            if (star) {
-              const [sx, sy, sz] = altAzToXYZ(
-                star.altitude,
-                star.azimuth,
-                RADIUS,
-              );
-              cx += sx;
-              cy += sy;
-              cz += sz;
-              count++;
-            }
-          }
-
-          if (count > 0) {
-            setCameraTarget([cx / count, cy / count, cz / count]);
-          }
-        } catch (e) {
-          console.error("Erreur calcul barycentre constellation", e);
-        }
-      }
-    }
-  };
+  // ... (Recherche céleste déplacée vers ConstellationSidebar)
 
   return (
     <div className="side-panel">
@@ -190,63 +100,15 @@ export function SidePanel() {
 
           {!selectedPoint && (
             <>
-              <h2>Recherche Céleste</h2>
+              <h2>Exploration</h2>
               <p style={{ color: "grey", fontSize: "0.9em" }}>
-                Cliquez un point sur le globe, ou cherchez une constellation :
+                Cliquez un point sur le globe pour explorer ce lieu.
               </p>
-              <input
-                type="text"
-                placeholder="Ex : Orion, Ursa Major..."
-                value={searchQuery}
-                onChange={handleSearchConstellation}
-                style={{
-                  width: "100%",
-                  padding: "8px",
-                  marginTop: "10px",
-                  borderRadius: "4px",
-                  border: "1px solid #444",
-                  background: "#222",
-                  color: "white",
-                }}
-              />
-              {loadingList && (
-                <p style={{ fontSize: "0.8em", color: "#888" }}>Recherche...</p>
-              )}
+
               {loadingDetail && (
-                <p style={{ fontSize: "0.8em", color: "#bb88f6" }}>
+                <p style={{ fontSize: "0.8em", color: "#bb88f6", marginTop: "15px" }}>
                   Calcul de l'orbite optimale...
                 </p>
-              )}
-              {results.length > 0 && (
-                <ul
-                  style={{
-                    listStyleType: "none",
-                    padding: 0,
-                    margin: "10px 0 0 0",
-                    maxHeight: "200px",
-                    overflowY: "auto",
-                  }}
-                >
-                  {results.map((c) => (
-                    <li
-                      key={c.id}
-                      onClick={() => selectConstellationAndView(c.id)}
-                      style={{
-                        padding: "8px",
-                        cursor: "pointer",
-                        borderBottom: "1px solid #333",
-                      }}
-                      onMouseEnter={(e) =>
-                        (e.currentTarget.style.backgroundColor = "#333")
-                      }
-                      onMouseLeave={(e) =>
-                        (e.currentTarget.style.backgroundColor = "transparent")
-                      }
-                    >
-                      <strong>{c.name_fr || c.name}</strong> ({c.abbreviation})
-                    </li>
-                  ))}
-                </ul>
               )}
             </>
           )}
@@ -318,8 +180,8 @@ export function SidePanel() {
                     <span className="value">
                       {selectedStar.constellation_abbr
                         ? constellationNameMap[
-                            selectedStar.constellation_abbr.toUpperCase()
-                          ] || selectedStar.constellation_abbr
+                        selectedStar.constellation_abbr.toUpperCase()
+                        ] || selectedStar.constellation_abbr
                         : "N/A"}
                     </span>
                   </div>

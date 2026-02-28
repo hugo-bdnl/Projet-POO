@@ -14,6 +14,7 @@ from app.services.astronomy_service import AstronomyService
 from app.services.cache_service import CacheService
 from app.schemas.constellation import (
     ConstellationListResponse,
+    PatternStar,
     ConstellationDetailResponse,
     BestLocationResponse,
 )
@@ -40,8 +41,25 @@ def get_all_constellations(db: Session = Depends(get_db)):
     repo = ConstellationRepository(db)
     result = repo.get_all()
 
-    _cache.set_static("all_constellations", result)
-    return result
+    # Explicitly map into Pydantic models to safely cache and handle relationship fields
+    response_list = [
+        ConstellationListResponse(
+            id=c.id,
+            name=c.name,
+            abbreviation=c.abbreviation,
+            name_fr=c.name_fr,
+            center_ra=c.center_ra,
+            center_dec=c.center_dec,
+            lines_data=c.lines_data,
+            pattern_stars=[
+                PatternStar(hip_id=s.hip_id, ra=s.ra, dec=s.dec) for s in c.stars if s.hip_id
+            ]
+        )
+        for c in result
+    ]
+
+    _cache.set_static("all_constellations", response_list)
+    return response_list
 
 
 @router.get("/search", response_model=list[ConstellationListResponse])
@@ -57,7 +75,23 @@ def search_constellations(
     @return: Liste de constellations correspondantes
     """
     repo = ConstellationRepository(db)
-    return repo.search_by_name(q)
+    result = repo.search_by_name(q)
+
+    return [
+        ConstellationListResponse(
+            id=c.id,
+            name=c.name,
+            abbreviation=c.abbreviation,
+            name_fr=c.name_fr,
+            center_ra=c.center_ra,
+            center_dec=c.center_dec,
+            lines_data=c.lines_data,
+            pattern_stars=[
+                PatternStar(hip_id=s.hip_id, ra=s.ra, dec=s.dec) for s in c.stars if s.hip_id
+            ]
+        )
+        for c in result
+    ]
 
 
 @router.get("/{constellation_id}", response_model=ConstellationDetailResponse)

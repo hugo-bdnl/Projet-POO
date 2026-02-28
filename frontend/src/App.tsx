@@ -6,6 +6,7 @@ import { Globe } from "./components/Globe";
 import { SidePanel } from "./components/SidePanel";
 import { NightSky } from "./components/NightSky";
 import { Effects } from "./components/Effects";
+import { ConstellationSidebar } from "./components/ConstellationSidebar";
 import { StarTooltip } from "./components/StarTooltip";
 import { TimeSlider } from "./components/TimeSlider";
 import { ConstellationGuide } from "./components/ConstellationGuide";
@@ -133,6 +134,8 @@ function App() {
 
       {/* Panneau latéral HTML UI - Tâches 2 & 6 */}
       <SidePanel />
+      {/* Barre unifiée pour chercher et afficher les constellations en mode globe */}
+      <ConstellationSidebar />
       {/* Contrôle Temporel - Ciel Nocturne */}
       <TimeSlider />
 

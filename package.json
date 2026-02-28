@@ -1,0 +1,32 @@
+{
+  "name": "projet-poo",
+  "version": "1.0.0",
+  "description": "Bienvenue sur le **Night Sky Viewer**, une application Fullstack immersive permettant l'exploration spatiale géolocalisée et la visualisation des 88 constellations depuis la Terre au travers du temps !",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs",
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hugo-bdnl/Projet-POO.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/hugo-bdnl/Projet-POO/issues"
+  },
+  "homepage": "https://github.com/hugo-bdnl/Projet-POO#readme",
+  "devDependencies": {
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "@vitest/browser": "^4.0.18",
+    "jsdom": "^28.1.0",
+    "vitest": "^4.0.18"
+  }
+}

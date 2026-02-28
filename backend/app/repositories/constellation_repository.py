@@ -3,7 +3,7 @@ Repository d'accès aux données pour les constellations.
 """
 
 from sqlalchemy import select
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 from app.models.constellation import Constellation
 
@@ -25,8 +25,8 @@ class ConstellationRepository:
 
         @return: Liste de toutes les constellations
         """
-        stmt = select(Constellation).order_by(Constellation.name.asc())
-        return list(self._db.execute(stmt).scalars().all())
+        stmt = select(Constellation).options(joinedload(Constellation.stars)).order_by(Constellation.name.asc())
+        return list(self._db.execute(stmt).unique().scalars().all())
 
     def get_by_id(self, constellation_id: int) -> Constellation | None:
         """
@@ -62,6 +62,7 @@ class ConstellationRepository:
                 Constellation.name.ilike(f"%{query}%")
                 | Constellation.name_fr.ilike(f"%{query}%")
             )
+            .options(joinedload(Constellation.stars))
             .order_by(Constellation.name.asc())
         )
-        return list(self._db.execute(stmt).scalars().all())
+        return list(self._db.execute(stmt).unique().scalars().all())

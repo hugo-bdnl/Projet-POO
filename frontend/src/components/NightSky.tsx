@@ -63,15 +63,15 @@ export const NightSky = () => {
     }
   }, [selectedConstellation]);
 
+  const hasConstellation =
+    constellationHipIds !== null && constellationHipIds.size > 0;
+
   const { positions, colors, sizes, highlights, starMap } = useMemo(() => {
     const positionsData: number[] = [];
     const colorsData: number[] = [];
     const sizesData: number[] = [];
     const highlightsData: number[] = [];
     const starMapData = new Map<number, VisibleStar>();
-
-    const hasConstellation =
-      constellationHipIds !== null && constellationHipIds.size > 0;
 
     stars.forEach((star, index) => {
       const [x, y, z] = altAzToXYZ(star.altitude, star.azimuth, SKY_RADIUS);
@@ -120,6 +120,22 @@ export const NightSky = () => {
 
   if (stars.length === 0) return null;
 
+  const getValidIntersection = (intersections: THREE.Intersection[]) => {
+    if (!hasConstellation) {
+      return intersections.sort((a, b) => a.distance - b.distance)[0];
+    }
+    return intersections
+      .filter((i) => {
+        const star = i.index !== undefined ? starMap.get(i.index) : null;
+        return (
+          star &&
+          star.hip_id !== null &&
+          constellationHipIds!.has(star.hip_id)
+        );
+      })
+      .sort((a, b) => a.distance - b.distance)[0];
+  };
+
   return (
     <group>
       <CompassRose />
@@ -128,20 +144,17 @@ export const NightSky = () => {
         ref={pointsRef}
         onPointerOver={(e) => {
           e.stopPropagation();
-          // Trier par distance pour sélectionner l'étoile la plus proche de la caméra
-          const closest = e.intersections.sort(
-            (a, b) => a.distance - b.distance,
-          )[0];
+          const closest = getValidIntersection(e.intersections);
           if (closest?.index !== undefined) {
             setHoveredStar(starMap.get(closest.index) || null);
+          } else {
+            setHoveredStar(null);
           }
         }}
         onPointerOut={() => setHoveredStar(null)}
         onClick={(e) => {
           e.stopPropagation();
-          const closest = e.intersections.sort(
-            (a, b) => a.distance - b.distance,
-          )[0];
+          const closest = getValidIntersection(e.intersections);
           if (closest?.index !== undefined) {
             setSelectedStar(starMap.get(closest.index) || null);
           }

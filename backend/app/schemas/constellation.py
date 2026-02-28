@@ -16,11 +16,28 @@ class ConstellationBase(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class PatternStar(BaseModel):
+    """Informations de base d'une étoile du pattern géométrique d'une constellation."""
+    hip_id: int
+    ra: float
+    dec: float
+
+    model_config = {"from_attributes": True}
+
+
 class ConstellationListResponse(ConstellationBase):
     """Constellation dans une liste (données minimales)."""
 
     center_ra: float | None = None
     center_dec: float | None = None
+    lines_data: str | None = Field(
+        None,
+        description="Pattern de lignes JSON: [[hip1,hip2], [hip2,hip3], ...]"
+    )
+    pattern_stars: list[PatternStar] = Field(
+        default_factory=list,
+        description="Etoiles impliquées dans le dessin de la constellation pour générer des miniatures vectorielles"
+    )
 
 
 class ConstellationDetailResponse(ConstellationBase):
