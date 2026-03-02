@@ -33,8 +33,8 @@ export function Globe() {
 
   return (
     <mesh ref={meshRef}>
-      {/* Sphère avec plus de segments pour un rendu plus précis, comme indiqué dans la doc */}
-      <sphereGeometry args={[1, 64, 64]} />
+      {/* Sphère avec segments équilibrés : 32x32 est imperceptible vs 64x64 mais 4x moins lourd */}
+      <sphereGeometry args={[1, 32, 32]} />
       <meshStandardMaterial
         map={colorMap}
         normalMap={normalMap}
@@ -62,7 +62,7 @@ export function Globe() {
 
       {/* Tâche 7 : Effet Atmosphère (Glow) */}
       <mesh>
-        <sphereGeometry args={[1.05, 64, 64]} />
+        <sphereGeometry args={[1.05, 32, 32]} />
         <shaderMaterial
           transparent
           depthWrite={false}

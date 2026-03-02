@@ -42,13 +42,14 @@ export function LocationMarker({
   const y = radius * Math.cos(phi);
 
   // Animation de scale en fonction du survol ou de la sélection
+  // On court-circuite si rien ne se passe (scale déjà normale) pour éviter
+  // 50 boucles qui tournent en permanence sans raison
   useFrame((_state, delta) => {
-    if (meshRef.current) {
-      if (hovered || isSelected) {
-        meshRef.current.scale.lerp(SCALE_HOVERED, delta * 10);
-      } else {
-        meshRef.current.scale.lerp(SCALE_NORMAL, delta * 10);
-      }
+    if (!meshRef.current) return;
+    if (hovered || isSelected) {
+      meshRef.current.scale.lerp(SCALE_HOVERED, delta * 10);
+    } else if (!meshRef.current.scale.equals(SCALE_NORMAL)) {
+      meshRef.current.scale.lerp(SCALE_NORMAL, delta * 10);
     }
   });
 

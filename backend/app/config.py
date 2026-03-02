@@ -24,7 +24,11 @@ class Settings(BaseSettings):
     DEBUG: bool = True
 
     # --- CORS ---
-    CORS_ORIGINS: list[str] = ["http://localhost:5173", "http://localhost:3000"]
+    CORS_ORIGINS: list[str] = [
+        "http://localhost:5173",   # Vite dev
+        "http://localhost:4173",   # Vite preview (npm run preview)
+        "http://localhost:3000",
+    ]
 
     # --- Cache ---
     CACHE_TTL_STARS: int = 600        # 10 minutes pour les positions calculées

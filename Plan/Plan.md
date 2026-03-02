@@ -585,11 +585,6 @@ all_altaz = all_coords.transform_to(altaz_frame)
 
 1. ✅ **Régler le problème de luminosité** globale (des étoiles et de l'environnement).
 2. ✅ **Caméra intelligente au clic Constellation** : Orienter précisément la caméra face au pattern 3D de la constellation recherchée au lieu d'une orientation fixe.
-3. [ ] **Mécanique de recherche visuelle des constellations** :
-   - Ajouter une "sidebar" (barre latérale) à gauche de la Terre.
-   - Celle-ci comprendra une liste déroulante avec les images des formes géométriques de chaque constellation et leur nom en dessous.
-   - La barre de texte de recherche existante (à droite) reste intacte.
-4. [ ] **Gérer les couleurs** de l'interface et du rendu pour un meilleur esthétisme.
 
 **Priorité 1 — Améliorations de Performances** :
 
@@ -609,31 +604,50 @@ all_altaz = all_coords.transform_to(altaz_frame)
 
 **Ajouts visuels (bonus)** :
 
-- Voie lactée texture ESA
-- Grille azimut/altitude (toggle)
 - ✅ Compteur étoiles visibles en temps réel
-- Mode jour/nuit sur le globe (terminateur dynamique)
 
-### SEMAINE 13 : DÉPLOIEMENT & PRÉSENTATION
+### SEMAINE 13 : NOUVELLES FONCTIONNALITÉS & AJUSTEMENTS
+
+**Objectif** : Ajouts visuels, nouvelles fonctionnalités et finalisation de l'UX.
+
+**Tâches** :
+
+1. [ ] **Gérer les couleurs** de l'interface et du rendu pour un meilleur esthétisme.
+2. [ ] **Voie lactée** : Intégrer la texture ESA.
+3. [ ] **Grille azimut/altitude** : Ajouter un toggle interactif.
+4. [ ] **Mode jour/nuit sur le globe** : Ajouter un terminateur dynamique.
+5. [ ] En **mode globe**, ajouter un fond d'étoiles pour la déco, non interactif et léger.
+6. [ ] Ajouter en **mode globe** une représentation de l'ISS + sa trajectoire en temps réél.
+7. [ ] En **mode globe et / ou sky**, ajouter la lune si possible.
+8. [ ] En **mode sky**, trouver une couleur pour la terre.
+9. [ ] En **mode sky**, ajouter un indicateur vers la terre lorsqu'elle n'est plus dans l'angle de la caméra, comme pour les constellations.
+
+**Livrable semaine 13** :
+
+- Application enrichie avec les nouvelles fonctionnalités visuelles et les ajustements d'interface.
+
+---
+
+### SEMAINE 14 : DÉPLOIEMENT & PRÉSENTATION
 
 **Objectif** : Mise en production, démo prête
 
 **Tâches Déploiement** :
 
-1. **Dockerisation finale** (multi-stage build)
-2. **Backend → Railway** (deploy depuis GitHub, SSL auto)
-3. **Frontend → Vercel** (build Vite automatique)
-4. **Configuration CORS** production
-5. **Tests production** (API accessible, latence < 500ms)
+1. [ ] **Dockerisation finale** (multi-stage build)
+2. [ ] **Backend → Railway** (deploy depuis GitHub, SSL auto)
+3. [ ] **Frontend → Vercel** (build Vite automatique)
+4. [ ] **Configuration CORS** production
+5. [ ] **Tests production** (API accessible, latence < 500ms)
 
 **Tâches Présentation** :
 
-1. **Vidéo démo** (2-3 minutes)
-2. **Slides soutenance** (15-20 slides)
-3. **README final** (installation, API docs, crédits)
-4. **Rehearsal soutenance** (10-15 min)
+1. [ ] **Vidéo démo** (2-3 minutes)
+2. [ ] **Slides soutenance** (15-20 slides)
+3. [ ] **README final** (installation, API docs, crédits)
+4. [ ] **Rehearsal soutenance** (10-15 min)
 
-**Livrable semaine 12** :
+**Livrable semaine 14** :
 
 - Application en ligne
 - Vidéo démo + slides finalisées

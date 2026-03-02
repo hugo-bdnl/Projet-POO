@@ -7,8 +7,9 @@ import type {
   BestLocation,
 } from "../types";
 
-// L'URL de base est tirée de la variable d'environnement Vite ou via un fallback
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
+// URL de base : variable d'env en prod déployée, sinon URL relative vide pour
+// que les appels /api/* passent par le proxy Vite (dev port 5173 / preview port 4173)
+const API_URL = import.meta.env.VITE_API_URL || "";
 
 const apiClient = axios.create({
   baseURL: API_URL,
