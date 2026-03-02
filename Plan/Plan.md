@@ -612,15 +612,14 @@ all_altaz = all_coords.transform_to(altaz_frame)
 
 **Tâches** :
 
-1. [ ] **Gérer les couleurs** de l'interface et du rendu pour un meilleur esthétisme.
-2. [ ] **Voie lactée** : Intégrer la texture ESA.
-3. [ ] **Grille azimut/altitude** : Ajouter un toggle interactif.
-4. [ ] **Mode jour/nuit sur le globe** : Ajouter un terminateur dynamique.
-5. [ ] En **mode globe**, ajouter un fond d'étoiles pour la déco, non interactif et léger.
-6. [ ] Ajouter en **mode globe** une représentation de l'ISS + sa trajectoire en temps réél.
-7. [ ] En **mode globe et / ou sky**, ajouter la lune si possible.
-8. [ ] En **mode sky**, trouver une couleur pour la terre.
-9. [ ] En **mode sky**, ajouter un indicateur vers la terre lorsqu'elle n'est plus dans l'angle de la caméra, comme pour les constellations.
+1. [ ] **Voie lactée** : Intégrer la texture ESA.
+2. [ ] **Grille azimut/altitude** : Ajouter un toggle interactif.
+3. [ ] **Mode jour/nuit sur le globe** : Ajouter un terminateur dynamique.
+4. [ ] En **mode globe**, ajouter un fond d'étoiles pour la déco, non interactif et léger.
+5. [ ] Ajouter en **mode globe** une représentation de l'ISS + sa trajectoire en temps réél.
+6. [ ] En **mode globe et / ou sky**, ajouter la lune si possible.
+7. [ ] En **mode sky**, trouver une couleur pour la terre.
+8. [ ] En **mode sky**, ajouter un indicateur vers la terre lorsqu'elle n'est plus dans l'angle de la caméra, comme pour les constellations.
 
 **Livrable semaine 13** :
 

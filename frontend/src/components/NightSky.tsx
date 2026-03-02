@@ -128,9 +128,7 @@ export const NightSky = () => {
       .filter((i) => {
         const star = i.index !== undefined ? starMap.get(i.index) : null;
         return (
-          star &&
-          star.hip_id !== null &&
-          constellationHipIds!.has(star.hip_id)
+          star && star.hip_id !== null && constellationHipIds!.has(star.hip_id)
         );
       })
       .sort((a, b) => a.distance - b.distance)[0];
