@@ -10,6 +10,7 @@ import { ConstellationSidebar } from "./components/ConstellationSidebar";
 import { StarTooltip } from "./components/StarTooltip";
 import { TimeSlider } from "./components/TimeSlider";
 import { ConstellationGuide } from "./components/ConstellationGuide";
+import { EarthGuide } from "./components/EarthGuide";
 import { useSkyStore } from "./stores/useSkyStore";
 import { useConstellationStore } from "./stores/useConstellationStore";
 import { useObservationStore } from "./stores/useObservationStore";
@@ -87,13 +88,14 @@ function App() {
   useEffect(() => {
     if (controlsRef.current) {
       if (viewMode === "globe") {
-        controlsRef.current.minDistance = 1.2;
-        controlsRef.current.maxDistance = 10;
+        controlsRef.current.minDistance = 2.5; // Empêche de zoomer dans la terre/atmosphère
+        controlsRef.current.maxDistance = 6; // Empêche de dézoomer à l'infini
       } else {
         // En mode Ciel, vue 1re personne, distance quasi 0
         controlsRef.current.minDistance = 0.05;
         controlsRef.current.maxDistance = Infinity;
       }
+      controlsRef.current.update();
     }
   }, [viewMode]);
 
@@ -151,10 +153,17 @@ function App() {
           <StarTooltip />
           {viewMode === "sky" && <Effects />}
           {viewMode === "sky" && <ConstellationGuide />}
+          {viewMode === "sky" && <EarthGuide />}
         </Suspense>
 
         {/* Contrôles de caméra avec damping (fluidité de mouvement) */}
-        <OrbitControls ref={controlsRef} enableDamping dampingFactor={0.05} />
+        <OrbitControls
+          ref={controlsRef}
+          enableDamping
+          dampingFactor={0.05}
+          minDistance={viewMode === "globe" ? 2.5 : 0.05}
+          maxDistance={viewMode === "globe" ? 6 : Infinity}
+        />
         <CameraController controlsRef={controlsRef} />
       </Canvas>
     </div>

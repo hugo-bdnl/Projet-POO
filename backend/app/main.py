@@ -15,6 +15,7 @@ from app.database import create_tables
 from app.api.stars import router as stars_router
 from app.api.constellations import router as constellations_router
 from app.api.observation_points import router as observation_points_router
+from app.api.iss import router as iss_router
 
 
 @asynccontextmanager
@@ -51,6 +52,7 @@ app.add_middleware(
 app.include_router(stars_router)
 app.include_router(constellations_router)
 app.include_router(observation_points_router)
+app.include_router(iss_router)
 
 
 @app.get("/", tags=["Health"])

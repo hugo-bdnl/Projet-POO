@@ -102,13 +102,13 @@ export const ConstellationGuide = () => {
                 cy="22"
                 r="20"
                 fill="none"
-                stroke="rgba(0, 240, 255, 0.15)"
+                stroke="rgba(126, 232, 250, 0.18)"
                 strokeWidth="2"
               />
               {/* Flèche pointant à droite (rotation gérée par le transform parent) */}
               <path
                 d="M14 22 L30 22 M24 16 L30 22 L24 28"
-                stroke="#00f0ff"
+                stroke="#7ee8fa"
                 strokeWidth="2.5"
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -121,13 +121,13 @@ export const ConstellationGuide = () => {
               background: "rgba(10, 10, 30, 0.85)",
               padding: "4px 10px",
               borderRadius: "12px",
-              border: "1px solid rgba(0, 240, 255, 0.4)",
-              color: "#00f0ff",
+              border: "1px solid rgba(126, 232, 250, 0.4)",
+              color: "#7ee8fa",
               fontFamily: "monospace",
               fontSize: "0.7rem",
               fontWeight: "bold",
               whiteSpace: "nowrap",
-              boxShadow: "0 0 12px rgba(0, 240, 255, 0.15)",
+              boxShadow: "0 0 12px rgba(126, 232, 250, 0.15)",
               textTransform: "uppercase",
               letterSpacing: "1px",
             }}
