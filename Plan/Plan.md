@@ -612,7 +612,7 @@ all_altaz = all_coords.transform_to(altaz_frame)
 
 **Tâches** :
 
-1. [ ] **Voie lactée** : Intégrer la texture ESA.
+1. ✅ **Voie lactée** : Intégrer la texture ESA.
 2. ✅ **Grille azimut/altitude** : Ajouter un toggle interactif.
 3. [ ] **Mode jour/nuit sur le globe** : Ajouter un terminateur dynamique.
 4. ✅ **Mode globe** : rendre la barre des constellations dépliable : petite flèche si on clique se replie, on reclique se redéplie.

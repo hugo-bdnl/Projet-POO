@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 import { useObservationStore } from "../stores/useObservationStore";
 import { useSkyStore } from "../stores/useSkyStore";
 import { useConstellationStore } from "../stores/useConstellationStore";
@@ -25,7 +25,7 @@ export function SidePanel() {
     fetchConstellationNames,
   } = useConstellationStore();
 
-  const { selectedISS, issInfo, clearISSSelection, setISSInfo } = useISSStore();
+  const { selectedISS, issInfo, clearISSSelection } = useISSStore();
 
   // Charger la table de correspondance abréviation → nom complet
   useEffect(() => {
@@ -34,27 +34,37 @@ export function SidePanel() {
     }
   }, [viewMode, fetchConstellationNames]);
 
-  // Reverse geocoding : pays survolé par l'ISS (throttle 10s)
-  const lastGeocode = useRef<number>(0);
+  // Reverse geocoding : pays survolé par l'ISS
+  // Utilise un setInterval (8s) plutôt qu'une dépendance sur issInfo pour
+  // éviter tout recalcul inutile quand la position change (chaque seconde).
+  // L'intervalle ne tourne que lorsque le panneau ISS est ouvert.
   useEffect(() => {
-    if (!selectedISS || !issInfo) return;
-    const now = Date.now();
-    if (now - lastGeocode.current < 10_000) return; // max 1 req / 10s
-    lastGeocode.current = now;
+    if (!selectedISS) return;
 
-    const { latitude_deg, longitude_deg } = issInfo;
-    fetch(
-      `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude_deg}&longitude=${longitude_deg}&localityLanguage=fr`,
-    )
-      .then((r) => r.json())
-      .then((data) => {
-        const country = data.countryName || data.locality || null;
-        setISSInfo({ ...issInfo, country });
-      })
-      .catch(() => {
-        /* silencieux */
-      });
-  }, [selectedISS, issInfo?.latitude_deg, issInfo?.longitude_deg]);
+    const doGeocode = () => {
+      // On lit issInfo via le store au moment de l'appel, pas depuis les deps
+      const { issInfo: currentInfo, setISSInfo: doSet } =
+        useISSStore.getState();
+      if (!currentInfo) return;
+      const { latitude_deg, longitude_deg } = currentInfo;
+      fetch(
+        `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude_deg}&longitude=${longitude_deg}&localityLanguage=fr`,
+      )
+        .then((r) => r.json())
+        .then((data) => {
+          const country = data.countryName || data.locality || null;
+          doSet({ ...useISSStore.getState().issInfo!, country });
+        })
+        .catch(() => {
+          /* silencieux */
+        });
+    };
+
+    // Premier appel immédiat au clic, puis toutes les 8s
+    doGeocode();
+    const id = setInterval(doGeocode, 8_000);
+    return () => clearInterval(id);
+  }, [selectedISS]);
 
   const handleObserveSky = () => {
     if (selectedPoint) {

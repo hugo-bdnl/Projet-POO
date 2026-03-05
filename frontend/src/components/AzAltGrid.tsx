@@ -12,8 +12,8 @@ import { altAzToVector3, SKY_RADIUS } from "../utils/skyCoords";
 
 const GRID_RADIUS = SKY_RADIUS * 0.99;
 const SEGMENTS = 72; // Fluidité des arcs
-const ALT_COLOR = "#445566"; // Couleur des parallèles
-const AZ_COLOR = "#334455"; // Couleur des méridiens
+const ALT_COLOR = "#ffffffff"; // Couleur des parallèles
+const AZ_COLOR = "#ffffffff"; // Couleur des méridiens
 
 // Altitudes des cercles de parallèle (en degrés)
 const ALTITUDE_CIRCLES = [30, 60];

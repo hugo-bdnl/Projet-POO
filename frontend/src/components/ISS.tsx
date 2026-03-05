@@ -34,9 +34,17 @@ const geodeticToVector3 = (lat: number, lon: number, alt: number) => {
 };
 
 export function ISS() {
-  const { tleData, fetchTLE, setISSInfo, setSelectedISS } = useISSStore();
+  const { tleData, fetchTLE, setISSInfo, setSelectedISS, selectedISS } =
+    useISSStore();
   const { setSelectedPoint } = useObservationStore();
   const issRef = useRef<THREE.Group>(null!);
+  // Dernière télémétrie calculée — utilisée pour le snapshot immédiat au clic
+  const lastTelemetryRef = useRef<{
+    latitude_deg: number;
+    longitude_deg: number;
+    altitude_km: number;
+    speed_kmh: number;
+  } | null>(null);
 
   useEffect(() => {
     fetchTLE();
@@ -66,7 +74,7 @@ export function ISS() {
     [orbitGeometry],
   );
 
-  // Ref pour throttler setISSInfo à 1× par seconde (indépendant de lastOrbitUpdate)
+  // Ref pour throttler setISSInfo à 1× par seconde et stocker les données récentes
   const lastTelemetryUpdate = useRef<number>(-999);
   const lastOrbitUpdate = useRef<number>(-999);
 
@@ -119,23 +127,28 @@ export function ISS() {
         );
       }
 
-      // ── Télémétrie — throttle strict 1× par seconde via ref dédié ────────
-      // On réutilise `pv.velocity` déjà calculé (pas de 3ème appel propagate)
-      if (
-        state.clock.elapsedTime - lastTelemetryUpdate.current > 1 &&
-        pv.velocity &&
-        typeof pv.velocity !== "boolean"
-      ) {
-        lastTelemetryUpdate.current = state.clock.elapsedTime;
+      // ── Télémétrie — uniquement si l'ISS est sélectionné (panneau ouvert) ──
+      // Pas de calcul ni de mise à jour du store si personne n'a cliqué sur l'ISS.
+      // On throttle à 1× par seconde pour éviter trop de re-renders.
+      if (pv.velocity && typeof pv.velocity !== "boolean") {
         const vel = pv.velocity as { x: number; y: number; z: number };
         const speed_kms = Math.sqrt(vel.x ** 2 + vel.y ** 2 + vel.z ** 2);
-        setISSInfo({
+        const telemetry = {
           latitude_deg: (gd.latitude * 180) / Math.PI,
           longitude_deg: (gd.longitude * 180) / Math.PI,
           altitude_km: gd.height,
           speed_kmh: speed_kms * 3600,
-          // country est géré dans SidePanel — on ne le remet pas à null ici
-        });
+        };
+        // Toujours màj le snapshot (pour le snapshot immédiat au clic)
+        lastTelemetryRef.current = telemetry;
+
+        if (
+          selectedISS &&
+          state.clock.elapsedTime - lastTelemetryUpdate.current > 1
+        ) {
+          lastTelemetryUpdate.current = state.clock.elapsedTime;
+          setISSInfo(telemetry);
+        }
       }
     }
   });
@@ -154,6 +167,11 @@ export function ISS() {
         onClick={(e) => {
           e.stopPropagation();
           setSelectedPoint(null); // désélectionner la ville
+          // Snapshot immédiat : réutilise le dernier propagate calculé dans useFrame
+          // pour que le panneau s'affiche sans attendre 1s
+          if (lastTelemetryRef.current) {
+            setISSInfo(lastTelemetryRef.current);
+          }
           setSelectedISS(true);
         }}
         onPointerOver={() => {

@@ -106,13 +106,6 @@ function App() {
 
   return (
     <div id="canvas-container">
-      <h1 className="overlay-title">🌌 Night Sky Viewer</h1>
-      <p className="overlay-subtitle">
-        {viewMode === "globe"
-          ? "Globe 3D interactif - Textures PBR (8K/2K)"
-          : "Ciel Nocturne Vectorisé Physique"}
-      </p>
-
       {/* HUD top-right en mode sky : Retour Globe + toggle grille */}
       {viewMode === "sky" && (
         <div

@@ -8,6 +8,7 @@ import { altAzToXYZ, SKY_RADIUS } from "../utils/skyCoords";
 import { CompassRose } from "./CompassRose";
 import { ConstellationPattern } from "./ConstellationPattern";
 import { AzAltGrid } from "./AzAltGrid";
+import { MilkyWay } from "./MilkyWay";
 
 // Convertit la magnitude en taille d'étoile (plus la magnitude est faible, plus elle est grosse)
 const getStarSize = (magnitude: number): number => {
@@ -138,6 +139,7 @@ export const NightSky = () => {
 
   return (
     <group ref={skyGroupRef}>
+      <MilkyWay />
       <CompassRose />
       <ConstellationPattern />
       {showAzAltGrid && <AzAltGrid />}

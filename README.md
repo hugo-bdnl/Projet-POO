@@ -65,4 +65,4 @@ _Le client web est testé et fonctionne sur `http://localhost:5173`._
 
 - Une UI "Dark Space Theme" totalement responsive avec "Bottom Sheet" design for mobile.
 - L'apparition fluide programmée au shader (Fade in) pour réduire l'agressivité rétinienne des objets célestes.
-- Un Linter stricte sans erreur TypeScript pour garantir une expérience de code de production.
+- Un Linter strict sans erreur TypeScript pour garantir une expérience de code de production.
