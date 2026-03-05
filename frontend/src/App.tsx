@@ -67,7 +67,12 @@ function CameraController({
 }
 
 function App() {
-  const { viewMode, stars, error: skyError } = useSkyStore();
+  const {
+    viewMode,
+    showAzAltGrid,
+    toggleAzAltGrid,
+    error: skyError,
+  } = useSkyStore();
   const { error: constellationError } = useConstellationStore();
   const { error: obsError } = useObservationStore();
 
@@ -108,26 +113,72 @@ function App() {
           : "Ciel Nocturne Vectorisé Physique"}
       </p>
 
-      {/* Bonus : Compteur d'étoiles en temps réel */}
-      {viewMode === "sky" && stars.length > 0 && (
+      {/* HUD top-right en mode sky : Retour Globe + toggle grille */}
+      {viewMode === "sky" && (
         <div
           style={{
             position: "absolute",
             top: "1.5rem",
             right: "2rem",
-            background: "rgba(10, 10, 20, 0.8)",
-            padding: "8px 16px",
-            borderRadius: "20px",
-            border: "1px solid rgba(0, 240, 255, 0.3)",
-            color: "#00f0ff",
-            fontFamily: "monospace",
-            fontSize: "0.9rem",
-            fontWeight: "bold",
-            zIndex: 10,
-            boxShadow: "0 0 15px rgba(0, 240, 255, 0.1)",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "flex-end",
+            gap: "8px",
+            zIndex: 100,
           }}
         >
-          ✨ {stars.length} objets simulés
+          {/* Bouton Retour au Globe */}
+          <button
+            onClick={() => {
+              useSkyStore.getState().setViewMode("globe");
+              useSkyStore.getState().setSelectedStar(null);
+              useSkyStore.getState().setCameraTarget(null);
+            }}
+            style={{
+              background: "rgba(10, 10, 20, 0.8)",
+              padding: "8px 16px",
+              borderRadius: "20px",
+              border: "1px solid rgba(0, 240, 255, 0.3)",
+              color: "#00f0ff",
+              fontFamily: "monospace",
+              fontSize: "0.9rem",
+              fontWeight: "bold",
+              boxShadow: "0 0 15px rgba(0, 240, 255, 0.1)",
+              cursor: "pointer",
+              transition: "all 0.2s ease",
+            }}
+          >
+            ← Globe
+          </button>
+
+          {/* Bouton toggle Grille Az/Alt */}
+          <button
+            onClick={toggleAzAltGrid}
+            title={
+              showAzAltGrid
+                ? "Masquer la grille Az/Alt"
+                : "Afficher la grille Az/Alt"
+            }
+            style={{
+              background: showAzAltGrid
+                ? "rgba(0, 240, 255, 0.15)"
+                : "rgba(10, 10, 20, 0.8)",
+              padding: "8px 16px",
+              borderRadius: "20px",
+              border: `1px solid rgba(0, 240, 255, ${showAzAltGrid ? "0.7" : "0.3"})`,
+              color: "#00f0ff",
+              fontFamily: "monospace",
+              fontSize: "0.85rem",
+              fontWeight: "bold",
+              boxShadow: showAzAltGrid
+                ? "0 0 18px rgba(0, 240, 255, 0.25)"
+                : "0 0 15px rgba(0, 240, 255, 0.1)",
+              cursor: "pointer",
+              transition: "all 0.2s ease",
+            }}
+          >
+            {showAzAltGrid ? "⊞ GRILLE ON" : "⊞ GRILLE"}
+          </button>
         </div>
       )}
 

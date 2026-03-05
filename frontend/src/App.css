@@ -71,11 +71,9 @@ body {
   max-height: calc(100vh - 4rem);
   overflow-y: auto;
   background: rgba(10, 10, 20, 0.85);
-  /* Plus sombre */
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border: 1px solid rgba(0, 240, 255, 0.2);
-  /* Accent cyan subtil */
   border-radius: 16px;
   padding: 1.5rem;
   color: #f8fafc;
@@ -84,6 +82,14 @@ body {
     0 8px 32px rgba(0, 0, 0, 0.6),
     0 0 10px rgba(0, 240, 255, 0.1);
   animation: slideFadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* En mode sky, le panneau se place à gauche pour ne pas couvrir le HUD */
+.side-panel--sky {
+  right: auto;
+  left: 2rem;
+  border-radius: 16px;
+  animation: slideFadeInLeft 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 /* Scrollbar personnalisée */

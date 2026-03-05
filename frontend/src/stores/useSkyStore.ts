@@ -24,6 +24,8 @@ interface SkyState {
   setSelectedStar: (star: VisibleStar | null) => void;
   cameraTarget: [number, number, number] | null;
   setCameraTarget: (target: [number, number, number] | null) => void;
+  showAzAltGrid: boolean;
+  toggleAzAltGrid: () => void;
 }
 
 export const useSkyStore = create<SkyState>((set) => ({
@@ -60,4 +62,7 @@ export const useSkyStore = create<SkyState>((set) => ({
 
   cameraTarget: null,
   setCameraTarget: (target) => set({ cameraTarget: target }),
+
+  showAzAltGrid: false,
+  toggleAzAltGrid: () => set((s) => ({ showAzAltGrid: !s.showAzAltGrid })),
 }));

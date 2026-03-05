@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import axios from "axios";
-import type { ISSTLEData } from "../types/iss";
+import type { ISSTLEData, ISSLiveInfo } from "../types/iss";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
@@ -9,6 +9,15 @@ interface ISSState {
   isLoading: boolean;
   error: string | null;
   fetchTLE: () => Promise<void>;
+
+  // Live telemetry (updated every second by ISS.tsx)
+  issInfo: ISSLiveInfo | null;
+  setISSInfo: (info: ISSLiveInfo) => void;
+
+  // Selection state
+  selectedISS: boolean;
+  setSelectedISS: (v: boolean) => void;
+  clearISSSelection: () => void;
 }
 
 export const useISSStore = create<ISSState>((set) => ({
@@ -23,11 +32,18 @@ export const useISSStore = create<ISSState>((set) => ({
       set({ tleData: response.data, isLoading: false });
     } catch (err) {
       console.error("Failed to fetch ISS TLE details:", err);
-      // We don't want to crash the app if ISS tracking fails, just show a silent error or no ISS
       set({
         error: "Impossible de charger les données de la Station Spatiale.",
         isLoading: false,
       });
     }
   },
+
+  issInfo: null,
+  setISSInfo: (info) =>
+    set((s) => ({ issInfo: { ...s.issInfo, ...info } as typeof s.issInfo })),
+
+  selectedISS: false,
+  setSelectedISS: (v) => set({ selectedISS: v }),
+  clearISSSelection: () => set({ selectedISS: false }),
 }));

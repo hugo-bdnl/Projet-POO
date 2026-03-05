@@ -7,6 +7,7 @@ import type { VisibleStar } from "../types";
 import { altAzToXYZ, SKY_RADIUS } from "../utils/skyCoords";
 import { CompassRose } from "./CompassRose";
 import { ConstellationPattern } from "./ConstellationPattern";
+import { AzAltGrid } from "./AzAltGrid";
 
 // Convertit la magnitude en taille d'étoile (plus la magnitude est faible, plus elle est grosse)
 const getStarSize = (magnitude: number): number => {
@@ -38,6 +39,7 @@ const getSpectralColor = (spectralType: string | null): THREE.Color => {
 export const NightSky = () => {
   const { stars, setHoveredStar, setSelectedStar } = useSkyStore();
   const { selectedConstellation } = useConstellationStore();
+  const { showAzAltGrid } = useSkyStore();
   const skyGroupRef = useRef<THREE.Group>(null);
   const materialRef = useRef<THREE.ShaderMaterial>(null);
 
@@ -138,6 +140,7 @@ export const NightSky = () => {
     <group ref={skyGroupRef}>
       <CompassRose />
       <ConstellationPattern />
+      {showAzAltGrid && <AzAltGrid />}
       <points
         onPointerOver={(e) => {
           e.stopPropagation();

@@ -3,6 +3,7 @@ import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 import { twoline2satrec, propagate, gstime, eciToGeodetic } from "satellite.js";
 import { useISSStore } from "../stores/useISSStore";
+import { useObservationStore } from "../stores/useObservationStore";
 
 // --- CONFIGURATION VISUELLE (non exportée : évite l'erreur HMR Vite) ---
 const ISS_SCALE = [0.02, 0.02, 0.02] as [number, number, number];
@@ -33,7 +34,8 @@ const geodeticToVector3 = (lat: number, lon: number, alt: number) => {
 };
 
 export function ISS() {
-  const { tleData, fetchTLE } = useISSStore();
+  const { tleData, fetchTLE, setISSInfo, setSelectedISS } = useISSStore();
+  const { setSelectedPoint } = useObservationStore();
   const issRef = useRef<THREE.Group>(null!);
 
   useEffect(() => {
@@ -64,6 +66,8 @@ export function ISS() {
     [orbitGeometry],
   );
 
+  // Ref pour throttler setISSInfo à 1× par seconde (indépendant de lastOrbitUpdate)
+  const lastTelemetryUpdate = useRef<number>(-999);
   const lastOrbitUpdate = useRef<number>(-999);
 
   useFrame((state) => {
@@ -74,18 +78,6 @@ export function ISS() {
 
     // -----------------------------------------------------------------------
     // 1. TRAJECTOIRE — mise à jour 1× par seconde
-    //
-    //    On trace de -PAST_MINUTES à +FUTURE_MINUTES autour de l'ISS.
-    //    L'ISS se retrouve visuellement AU MILIEU de la ligne, pas à un bout.
-    //
-    //    Pourquoi ne pas tracer les 92 min complètes (1 orbite) ?
-    //    Parce que l'orbite revient presque à son point de départ : on verrait
-    //    deux segments proches de l'ISS, et le segment "t ≈ 92 min" semble
-    //    décalé de l'ISS (orbite pas parfaitement cyclique), créant l'illusion
-    //    d'un mauvais raccordement. La fenêtre courte (55 min) évite ça.
-    //
-    //    Drift ISS↔point central de la ligne : max 7 km/s × 1 s = 7.7 km
-    //    = 0.002 unités scène = imperceptible.
     // -----------------------------------------------------------------------
     if (state.clock.elapsedTime - lastOrbitUpdate.current > 1) {
       lastOrbitUpdate.current = state.clock.elapsedTime;
@@ -103,8 +95,6 @@ export function ISS() {
       }
 
       orbitGeometry.setFromPoints(points);
-      // computeLineDistances() avec les vrais points (aucun placeholder à l'origine)
-      // → distances correctes → premier tiret au bon endroit
       orbitLine.computeLineDistances();
     }
 
@@ -116,7 +106,6 @@ export function ISS() {
       const eci = pv.position as { x: number; y: number; z: number };
       const gd = eciToGeodetic(eci, gstime(now));
       const pos = geodeticToVector3(gd.latitude, gd.longitude, gd.height);
-
       issRef.current.position.copy(pos);
 
       // Orientation vers la position à +1 seconde
@@ -129,6 +118,25 @@ export function ISS() {
           geodeticToVector3(nextGd.latitude, nextGd.longitude, nextGd.height),
         );
       }
+
+      // ── Télémétrie — throttle strict 1× par seconde via ref dédié ────────
+      // On réutilise `pv.velocity` déjà calculé (pas de 3ème appel propagate)
+      if (
+        state.clock.elapsedTime - lastTelemetryUpdate.current > 1 &&
+        pv.velocity &&
+        typeof pv.velocity !== "boolean"
+      ) {
+        lastTelemetryUpdate.current = state.clock.elapsedTime;
+        const vel = pv.velocity as { x: number; y: number; z: number };
+        const speed_kms = Math.sqrt(vel.x ** 2 + vel.y ** 2 + vel.z ** 2);
+        setISSInfo({
+          latitude_deg: (gd.latitude * 180) / Math.PI,
+          longitude_deg: (gd.longitude * 180) / Math.PI,
+          altitude_km: gd.height,
+          speed_kmh: speed_kms * 3600,
+          // country est géré dans SidePanel — on ne le remet pas à null ici
+        });
+      }
     }
   });
 
@@ -139,8 +147,22 @@ export function ISS() {
       {/* Trajectoire orbitale — objet Three.js stable (mémoïsé) */}
       <primitive object={orbitLine} />
 
-      {/* Modèle 3D ISS */}
-      <group ref={issRef} scale={ISS_SCALE}>
+      {/* Modèle 3D ISS — cliquable */}
+      <group
+        ref={issRef}
+        scale={ISS_SCALE}
+        onClick={(e) => {
+          e.stopPropagation();
+          setSelectedPoint(null); // désélectionner la ville
+          setSelectedISS(true);
+        }}
+        onPointerOver={() => {
+          document.body.style.cursor = "pointer";
+        }}
+        onPointerOut={() => {
+          document.body.style.cursor = "auto";
+        }}
+      >
         <mesh rotation={[0, 0, Math.PI / 2]}>
           <cylinderGeometry args={[0.5, 0.5, 4, 16]} />
           <meshStandardMaterial

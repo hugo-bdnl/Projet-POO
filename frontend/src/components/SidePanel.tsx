@@ -1,7 +1,8 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useObservationStore } from "../stores/useObservationStore";
 import { useSkyStore } from "../stores/useSkyStore";
 import { useConstellationStore } from "../stores/useConstellationStore";
+import { useISSStore } from "../stores/useISSStore";
 
 export function SidePanel() {
   const { selectedPoint, setSelectedPoint } = useObservationStore();
@@ -24,12 +25,36 @@ export function SidePanel() {
     fetchConstellationNames,
   } = useConstellationStore();
 
+  const { selectedISS, issInfo, clearISSSelection, setISSInfo } = useISSStore();
+
   // Charger la table de correspondance abréviation → nom complet
   useEffect(() => {
     if (viewMode === "sky") {
       fetchConstellationNames();
     }
   }, [viewMode, fetchConstellationNames]);
+
+  // Reverse geocoding : pays survolé par l'ISS (throttle 10s)
+  const lastGeocode = useRef<number>(0);
+  useEffect(() => {
+    if (!selectedISS || !issInfo) return;
+    const now = Date.now();
+    if (now - lastGeocode.current < 10_000) return; // max 1 req / 10s
+    lastGeocode.current = now;
+
+    const { latitude_deg, longitude_deg } = issInfo;
+    fetch(
+      `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude_deg}&longitude=${longitude_deg}&localityLanguage=fr`,
+    )
+      .then((r) => r.json())
+      .then((data) => {
+        const country = data.countryName || data.locality || null;
+        setISSInfo({ ...issInfo, country });
+      })
+      .catch(() => {
+        /* silencieux */
+      });
+  }, [selectedISS, issInfo?.latitude_deg, issInfo?.longitude_deg]);
 
   const handleObserveSky = () => {
     if (selectedPoint) {
@@ -49,12 +74,84 @@ export function SidePanel() {
     setSelectedStar(null);
     setCameraTarget(null);
     clearSelection();
+    clearISSSelection();
   };
+
+  const fmt = (n: number, dec = 4) => n.toFixed(dec);
 
   // ... (Recherche céleste déplacée vers ConstellationSidebar)
 
+  // ── Rendu ISS ──────────────────────────────────────────────────────────────
+  if (viewMode === "globe" && selectedISS && issInfo) {
+    return (
+      <div className="side-panel">
+        <button
+          className="close-button"
+          onClick={clearISSSelection}
+          title="Fermer"
+        >
+          ✕
+        </button>
+        <h2>🛸 Station Spatiale ISS</h2>
+
+        <div className="info-group">
+          <span className="label">Latitude</span>
+          <span className="value">{fmt(issInfo.latitude_deg)}°</span>
+        </div>
+        <div className="info-group">
+          <span className="label">Longitude</span>
+          <span className="value">{fmt(issInfo.longitude_deg)}°</span>
+        </div>
+        <div className="info-group">
+          <span className="label">Altitude</span>
+          <span className="value">{fmt(issInfo.altitude_km, 1)} km</span>
+        </div>
+        <div className="info-group">
+          <span className="label">Vitesse orbitale</span>
+          <span className="value">
+            {Math.round(issInfo.speed_kmh).toLocaleString("fr-FR")} km/h
+          </span>
+        </div>
+        <div className="info-group">
+          <span className="label">Au-dessus de</span>
+          <span className="value">
+            {issInfo.country ?? (
+              <span style={{ color: "#666", fontStyle: "italic" }}>
+                Calcul...
+              </span>
+            )}
+          </span>
+        </div>
+
+        <div
+          style={{
+            marginTop: "20px",
+            padding: "12px",
+            background: "rgba(0,240,180,0.05)",
+            borderRadius: "8px",
+            border: "1px solid rgba(0,240,180,0.15)",
+            fontSize: "0.78rem",
+            color: "#aaa",
+            lineHeight: 1.6,
+          }}
+        >
+          <div>Inclinaison orbitale : ~51.6°</div>
+          <div>Période orbitale : ~92 min</div>
+          <div>Altitude nominale : ~408 km</div>
+          <div
+            style={{ marginTop: "6px", color: "#00f0cc", fontSize: "0.7rem" }}
+          >
+            Données calculées en temps réel via TLE NORAD
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="side-panel">
+    <div
+      className={`side-panel${viewMode === "sky" ? " side-panel--sky" : ""}`}
+    >
       {viewMode === "globe" ? (
         <>
           {selectedPoint && (
@@ -106,7 +203,13 @@ export function SidePanel() {
               </p>
 
               {loadingDetail && (
-                <p style={{ fontSize: "0.8em", color: "#bb88f6", marginTop: "15px" }}>
+                <p
+                  style={{
+                    fontSize: "0.8em",
+                    color: "#bb88f6",
+                    marginTop: "15px",
+                  }}
+                >
                   Calcul de l'orbite optimale...
                 </p>
               )}
@@ -115,13 +218,23 @@ export function SidePanel() {
         </>
       ) : (
         <>
-          <button
-            className="close-button"
-            onClick={handleReturnToGlobe}
-            title="Retour au Globe"
-          >
-            ←
-          </button>
+          {selectedStar ? (
+            <button
+              className="close-button"
+              onClick={() => setSelectedStar(null)}
+              title="Désélectionner l'étoile"
+            >
+              ✕
+            </button>
+          ) : (
+            <button
+              className="close-button"
+              onClick={handleReturnToGlobe}
+              title="Retour au Globe"
+            >
+              ←
+            </button>
+          )}
           <h2>🌌 Ciel Nocturne</h2>
           <p
             style={{
@@ -180,8 +293,8 @@ export function SidePanel() {
                     <span className="value">
                       {selectedStar.constellation_abbr
                         ? constellationNameMap[
-                        selectedStar.constellation_abbr.toUpperCase()
-                        ] || selectedStar.constellation_abbr
+                            selectedStar.constellation_abbr.toUpperCase()
+                          ] || selectedStar.constellation_abbr
                         : "N/A"}
                     </span>
                   </div>
