@@ -53,9 +53,9 @@ export const CompassRose = () => {
         O
       </Text>
 
-      {/* Ligne d'horizon visuelle optionnelle */}
+      {/* Grille d'horizon — lignes blanc néon, fond transparent */}
       <gridHelper
-        args={[RADIUS * 2, 36, 0x222222, 0x111111]}
+        args={[RADIUS * 2, 36, 0xaaddff, 0xaaddff]}
         position={[0, -0.1, 0]}
       />
     </group>

@@ -620,7 +620,7 @@ all_altaz = all_coords.transform_to(altaz_frame)
 6. ✅ Ajouter en **mode globe** une représentation de l'ISS + sa trajectoire en temps réél.
 7. [ ] En **mode globe et / ou sky**, ajouter le système solaire (soleil, planètes, orbites) Implémentation possible : vue large, puis quand on clique sur une planète on a une vue globe comme celle de la terre actuelle (avec les textures, etc)..
 8. [ ] En **mode sky**, trouver une couleur pour la terre.
-9. [ ] En **mode sky**, ajouter un indicateur vers la terre lorsqu'elle n'est plus dans l'angle de la caméra, comme pour les constellations.
+9. ✅ En **mode sky**, ajouter un indicateur vers la terre lorsqu'elle n'est plus dans l'angle de la caméra, comme pour les constellations.
 
 **Livrable semaine 13** :
 
