@@ -618,7 +618,7 @@ all_altaz = all_coords.transform_to(altaz_frame)
 4. ✅ **Mode globe** : rendre la barre des constellations dépliable : petite flèche si on clique se replie, on reclique se redéplie.
 5. ✅ En **mode globe**, ajouter un fond d'étoiles pour la déco, non interactif et léger. Pas à partir d'une image, juste un fond de points légers qui donnent une impression d'espace (peut-être avec un petit mouvement des étoiles pour faire comme si ça bougeait).
 6. ✅ Ajouter en **mode globe** une représentation de l'ISS + sa trajectoire en temps réél.
-7. [ ] En **mode globe et / ou sky**, ajouter le système solaire (soleil, planètes, orbites) Implémentation possible : vue large, puis quand on clique sur une planète on a une vue globe comme celle de la terre actuelle (avec les textures, etc)..
+7. [ ] En **mode globe et / ou sky**, ajouter le système solaire (soleil, planètes, orbites) Implémentation possible : vue large, puis quand on clique sur une planète on a un zoom sur la planète et une vue globe comme celle de la terre actuelle (avec les textures, etc)..
 8. ✅ En **mode sky**, trouver une couleur pour la terre.
 9. ✅ En **mode sky**, ajouter un indicateur vers la terre lorsqu'elle n'est plus dans l'angle de la caméra, comme pour les constellations.
 

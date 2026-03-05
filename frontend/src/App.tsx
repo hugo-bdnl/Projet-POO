@@ -185,7 +185,11 @@ function App() {
       {/* Contrôle Temporel - Ciel Nocturne */}
       <TimeSlider />
 
-      <Canvas camera={{ position: [0, 0, 3], fov: 50 }} dpr={[1, 1.5]}>
+      <Canvas
+        camera={{ position: [0, 0, 3], fov: 50 }}
+        dpr={[1, 1.5]}
+        gl={{ localClippingEnabled: true }}
+      >
         <color attach="background" args={["#000000"]} />
         <ambientLight intensity={0.2} />
         {viewMode === "globe" && (
