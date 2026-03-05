@@ -16,47 +16,48 @@ ISS_NORAD_ID = "25544"
 logger = logging.getLogger(__name__)
 
 async def fetch_tle() -> str:
-    """Fetch TLE data from CelesTrak and extract the ISS data."""
+    """Fetch TLE data from CelesTrak or fallback sources and extract the ISS data."""
     if "iss_tle" in tle_cache:
         return tle_cache["iss_tle"]
 
-    try:
-        async with httpx.AsyncClient(timeout=10.0, follow_redirects=True) as client:
-            response = await client.get(CELESTRAK_URL)
-            response.raise_for_status()
-            
-            lines = response.text.splitlines()
-            
-            # Find ISS (ZARYA)
-            # The format is:
-            # Line 0: Name (e.g. ISS (ZARYA))
-            # Line 1: TLE Line 1 (starts with 1 25544U ...)
-            # Line 2: TLE Line 2 (starts with 2 25544  ...)
-            
-            for i in range(len(lines) - 2):
-                if lines[i].strip().startswith("ISS (ZARYA)"):
-                    if lines[i+1].startswith(f"1 {ISS_NORAD_ID}") and lines[i+2].startswith(f"2 {ISS_NORAD_ID}"):
-                        tle_data = f"{lines[i].strip()}\n{lines[i+1].strip()}\n{lines[i+2].strip()}"
+    urls_to_try = [
+        "https://celestrak.org/NORAD/elements/stations.txt",
+        "https://live.ariss.org/iss.txt"
+    ]
+    
+    last_error = None
+
+    async with httpx.AsyncClient(timeout=10.0, follow_redirects=True) as client:
+        for url in urls_to_try:
+            try:
+                response = await client.get(url)
+                response.raise_for_status()
+                
+                lines = response.text.splitlines()
+                
+                # Find ISS (ZARYA)
+                for i in range(len(lines) - 2):
+                    if lines[i].strip().startswith("ISS (ZARYA)"):
+                        if lines[i+1].startswith(f"1 {ISS_NORAD_ID}") and lines[i+2].startswith(f"2 {ISS_NORAD_ID}"):
+                            tle_data = f"{lines[i].strip()}\n{lines[i+1].strip()}\n{lines[i+2].strip()}"
+                            tle_cache["iss_tle"] = tle_data
+                            return tle_data
+                
+                # If ISS (ZARYA) not found by name, try fallback by ID
+                for i in range(len(lines) - 1):
+                    if lines[i].startswith(f"1 {ISS_NORAD_ID}") and lines[i+1].startswith(f"2 {ISS_NORAD_ID}"):
+                        # Previous line is the name
+                        name = lines[i-1].strip() if i > 0 else "ISS"
+                        tle_data = f"{name}\n{lines[i].strip()}\n{lines[i+1].strip()}"
                         tle_cache["iss_tle"] = tle_data
                         return tle_data
-            
-            # If ISS (ZARYA) not found by name, try fallback by ID
-            for i in range(len(lines) - 1):
-                if lines[i].startswith(f"1 {ISS_NORAD_ID}") and lines[i+1].startswith(f"2 {ISS_NORAD_ID}"):
-                    # Previous line is the name
-                    name = lines[i-1].strip() if i > 0 else "ISS"
-                    tle_data = f"{name}\n{lines[i].strip()}\n{lines[i+1].strip()}"
-                    tle_cache["iss_tle"] = tle_data
-                    return tle_data
-                    
-            raise ValueError("ISS TLE data not found in CelesTrak response")
+                        
+            except Exception as e:
+                logger.warning(f"Failed to fetch TLE from {url}: {e}")
+                last_error = e
 
-    except httpx.HTTPError as e:
-        logger.error(f"Error fetching TLE from CelesTrak: {e}")
-        raise HTTPException(status_code=502, detail="Failed to fetch TLE data from upstream source")
-    except Exception as e:
-        logger.error(f"Error parsing TLE data: {e}")
-        raise HTTPException(status_code=500, detail="Internal error processing TLE data")
+    logger.error(f"All attempts to fetch TLE failed. Last error: {last_error}")
+    raise HTTPException(status_code=502, detail="Failed to fetch TLE data from upstream sources")
 
 @router.get("/tle")
 async def get_iss_tle():

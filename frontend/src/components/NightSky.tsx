@@ -38,7 +38,7 @@ const getSpectralColor = (spectralType: string | null): THREE.Color => {
 export const NightSky = () => {
   const { stars, setHoveredStar, setSelectedStar } = useSkyStore();
   const { selectedConstellation } = useConstellationStore();
-  const pointsRef = useRef<THREE.Points>(null);
+  const skyGroupRef = useRef<THREE.Group>(null);
   const materialRef = useRef<THREE.ShaderMaterial>(null);
 
   // Stabiliser les uniforms pour éviter la réinitialisation par React
@@ -106,8 +106,8 @@ export const NightSky = () => {
 
   // Lent mouvement de rotation de la voute celeste pour faire vivant
   useFrame((_state, delta) => {
-    if (pointsRef.current) {
-      pointsRef.current.rotation.y += 0.0001;
+    if (skyGroupRef.current) {
+      skyGroupRef.current.rotation.y += 0.0001;
     }
     if (materialRef.current) {
       materialRef.current.uniforms.uTime.value += delta;
@@ -135,11 +135,10 @@ export const NightSky = () => {
   };
 
   return (
-    <group>
+    <group ref={skyGroupRef}>
       <CompassRose />
       <ConstellationPattern />
       <points
-        ref={pointsRef}
         onPointerOver={(e) => {
           e.stopPropagation();
           const closest = getValidIntersection(e.intersections);

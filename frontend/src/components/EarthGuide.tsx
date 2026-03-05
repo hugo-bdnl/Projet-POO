@@ -3,17 +3,12 @@ import { useFrame, useThree } from "@react-three/fiber";
 import { Html } from "@react-three/drei";
 import * as THREE from "three";
 import { useSkyStore } from "../stores/useSkyStore";
-import { altAzToVector3 } from "../utils/skyCoords";
 
 /**
  * Indicateur directionnel vers la Terre en mode sky.
- * La Terre se situe toujours au nadir (alt = −90°), donc sous l'horizon.
- * Affiche une flèche HTML au bord de l'écran pointant vers le bas,
- * avec un style Tron Legacy (blanc néon, halo lumineux).
+ * Affiche une flèche HTML en bas de l'écran pointant vers la Terre
+ * lorsque celle-ci est sortie du champ de vision (quand on regarde le zénith).
  */
-
-// Vecteur nadir pré-calculé (la Terre est toujours à alt = -90°)
-const EARTH_DIRECTION = altAzToVector3(-90, 0);
 
 export const EarthGuide = () => {
   const { viewMode } = useSkyStore();
@@ -22,36 +17,37 @@ export const EarthGuide = () => {
   const arrowRef = useRef<HTMLDivElement>(null);
   const groupRef = useRef<THREE.Group>(null);
   // Vecteurs pré-alloués — pas de new Vector3 dans useFrame
-  const projectedVec = useRef(new THREE.Vector3());
+  const cameraDirVec = useRef(new THREE.Vector3());
 
   useFrame(() => {
     if (!arrowRef.current || viewMode !== "sky") return;
 
-    projectedVec.current.copy(EARTH_DIRECTION).project(camera);
-    const projected = projectedVec.current;
+    camera.getWorldDirection(cameraDirVec.current);
 
-    // Si la Terre est dans le champ de vision → cacher l'indicateur
-    const isOnScreen =
-      projected.z < 1 &&
-      Math.abs(projected.x) < 0.85 &&
-      Math.abs(projected.y) < 0.85;
+    // On calcule l'altitude (pitch) de la caméra. camera.up est (0, 1, 0)
+    // donc cameraDir.y contient le sinus du pitch.
+    const pitch = Math.asin(cameraDirVec.current.y) * THREE.MathUtils.RAD2DEG;
+    const fov = (camera as THREE.PerspectiveCamera).fov || 50;
 
-    if (isOnScreen) {
+    // La Terre (horizon) est visible si le bas de l'écran est proche ou en dessous de l'horizon.
+    // On ajoute une marge pour s'assurer qu'au moindre flou sur l'horizon, on cache l'indicateur.
+    const isEarthVisible = pitch - fov / 2 < 2;
+
+    if (isEarthVisible) {
       arrowRef.current.style.opacity = "0";
       return;
     }
 
     arrowRef.current.style.opacity = "1";
 
-    // Angle vers le nadir projeté
-    const angle = Math.atan2(projected.y, projected.x);
+    // Si on ne voit plus la Terre, c'est qu'on regarde vers le zénith.
+    // L'indicateur pointe toujours vers le bas (pitch down) pour la retrouver.
+    const angle = -Math.PI / 2;
 
-    // Position elliptique en bord d'écran avec une marge légèrement
-    // différente de ConstellationGuide pour éviter la superposition
-    const marginX = size.width * 0.38;
-    const marginY = size.height * 0.33;
-    const posX = Math.cos(angle) * marginX;
-    const posY = Math.sin(angle) * marginY;
+    // Position fixe en bas de l'écran (légèrement remontée pour éviter la chronologie)
+    const marginY = size.height * 0.32;
+    const posX = 0;
+    const posY = Math.sin(angle) * marginY; // équivalent à -marginY
 
     arrowRef.current.style.transform = `translate(${posX}px, ${-posY}px) rotate(${-angle}rad)`;
   });
