@@ -1,5 +1,11 @@
 # 🚀 Lancement Rapide — Night Sky Viewer
 
+> **Documentation technique complète :**
+>
+> - 🖥️ [BACKEND.md](./BACKEND.md) — API Reference, modèles, services, cache
+> - 🎨 [FRONTEND.md](./FRONTEND.md) — Composants 3D, stores, architecture React/Three.js
+> - 🧪 [TESTS.md](./TESTS.md) — Tests unitaires et d'intégration
+
 ## 1. Backend (Python / FastAPI)
 
 ```bash
