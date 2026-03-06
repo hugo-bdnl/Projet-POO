@@ -87,7 +87,7 @@ export const ConstellationPattern = () => {
       {/* 2. Nom affiché au barycentre du dessin */}
       <Text
         position={linesAndLabelData.labelPos}
-        fontSize={0.8}
+        fontSize={0.5}
         color="#aaddff"
         anchorX="center"
         anchorY="middle"
