@@ -63,6 +63,7 @@ def get_visible_stars(
         latitude=lat,
         longitude=lon,
         timestamp=timestamp,
+        mag_limit=mag_limit,
     )
 
     return visible

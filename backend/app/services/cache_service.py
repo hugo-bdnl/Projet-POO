@@ -66,7 +66,7 @@ class CacheService:
         self._static_cache[key] = value
 
     @staticmethod
-    def make_time_key(prefix: str, lat: float, lon: float, timestamp: datetime) -> str:
+    def make_time_key(prefix: str, lat: float, lon: float, timestamp: datetime, *args) -> str:
         """
         Génère une clé de cache arrondie à 5 minutes.
         Les positions des étoiles changent très lentement :
@@ -76,11 +76,15 @@ class CacheService:
         @param lat: Latitude arrondie à 2 décimales
         @param lon: Longitude arrondie à 2 décimales
         @param timestamp: Horodatage arrondi à 5 minutes
+        @param args: Autres paramètres à inclure dans la clé (ex: mag_limit)
         @return: Clé de cache unique
         """
         # Arrondi à 5 minutes (300 secondes)
         rounded_ts = int(timestamp.timestamp()) // 300 * 300
-        return f"{prefix}:{round(lat, 2)}:{round(lon, 2)}:{rounded_ts}"
+        key = f"{prefix}:{round(lat, 2)}:{round(lon, 2)}:{rounded_ts}"
+        for arg in args:
+            key += f":{arg}"
+        return key
 
     def clear(self) -> None:
         """Vide tous les caches."""

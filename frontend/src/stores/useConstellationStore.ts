@@ -79,10 +79,6 @@ export const useConstellationStore = create<ConstellationState>((set, get) => ({
         bestLocation: location,
         loadingDetail: false,
       });
-
-      // Refetch les étoiles avec une mag_limit plus large pour afficher
-      // les étoiles du pattern qui seraient trop faibles (mag > 5)
-      await useSkyStore.getState().refetchWithMagLimit(8);
     } catch (err: unknown) {
       set({
         error:
@@ -111,8 +107,7 @@ export const useConstellationStore = create<ConstellationState>((set, get) => ({
 
   clearSelection: () => {
     set({ selectedConstellation: null, bestLocation: null });
-    // Revenir à la liste d'étoiles normale (mag_limit=5) pour ne pas garder
-    // les étoiles faibles affichées après désélection
-    useSkyStore.getState().refetchWithMagLimit(5);
+    // Vider les étoiles extras du pattern précédent
+    useSkyStore.getState().clearConstellationExtras();
   },
 }));

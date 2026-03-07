@@ -38,6 +38,7 @@ class AstronomyService:
         latitude: float,
         longitude: float,
         timestamp: datetime,
+        mag_limit: float = 6.0,
     ) -> list[dict]:
         """
         Calcule les positions horizontales de toutes les étoiles et retourne
@@ -50,15 +51,16 @@ class AstronomyService:
         @param latitude: Latitude de l'observateur (degrés, N positif)
         @param longitude: Longitude de l'observateur (degrés, E positif)
         @param timestamp: Temps d'observation en UTC
+        @param mag_limit: Magnitude limite utilisée pour le pré-filtrage
         @return: Liste de dicts {id, proper_name, hip_id, magnitude,
                  spectral_type, constellation_abbr, azimuth, altitude}
         """
         if not stars:
             return []
 
-        # Clé de cache arrondie à 5 minutes
+        # Clé de cache arrondie à 5 minutes (inclut la mag_limit)
         cache_key = _cache.make_time_key(
-            "visible", latitude, longitude, timestamp
+            "visible", latitude, longitude, timestamp, mag_limit
         )
         cached = _cache.get(cache_key)
         if cached is not None:

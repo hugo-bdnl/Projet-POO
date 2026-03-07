@@ -7,7 +7,7 @@ import { altAzToVector3, SKY_RADIUS } from "../utils/skyCoords";
 
 export const ConstellationPattern = () => {
   const { selectedConstellation } = useConstellationStore();
-  const { stars } = useSkyStore();
+  const { stars, constellationExtraStars } = useSkyStore();
 
   const linesAndLabelData = useMemo(() => {
     if (
@@ -25,8 +25,10 @@ export const ConstellationPattern = () => {
       );
 
       // Index par hip_id pour des lookups O(1) au lieu de O(n)
+      // On inclut les étoiles extras (mag > 5) nécessaires pour le pattern
+      const allStars = [...stars, ...constellationExtraStars];
       const starsByHip = new Map(
-        stars.filter((s) => s.hip_id !== null).map((s) => [s.hip_id!, s]),
+        allStars.filter((s) => s.hip_id !== null).map((s) => [s.hip_id!, s]),
       );
 
       const lineGeometrySegments: THREE.Vector3[][] = [];
@@ -66,7 +68,7 @@ export const ConstellationPattern = () => {
       console.error("Erreur de parsing des lignes de constellation", e);
       return null;
     }
-  }, [selectedConstellation, stars]);
+  }, [selectedConstellation, stars, constellationExtraStars]);
 
   if (!linesAndLabelData) return null;
 

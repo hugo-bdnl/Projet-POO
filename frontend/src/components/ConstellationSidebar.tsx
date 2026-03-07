@@ -164,6 +164,9 @@ export function ConstellationSidebar() {
 
   const handleSelect = async (id: number) => {
     setLoadingActionId(id);
+    // Vider les extras du pattern précédent
+    useSkyStore.getState().clearConstellationExtras();
+
     await fetchConstellationDetailAndLocation(id, timestamp);
 
     const { bestLocation, selectedConstellation } =
@@ -202,6 +205,11 @@ export function ConstellationSidebar() {
           );
 
           const hipIds = new Set(pairs.flat());
+
+          // Fetcher les étoiles manquantes du pattern APRÈS fetchVisibleStars
+          // (les coordonnées currentLat/currentLon sont maintenant celles du best location)
+          await useSkyStore.getState().fetchConstellationExtras(hipIds);
+
           for (const hipId of hipIds) {
             const star = starsByHip.get(hipId);
             if (star) {

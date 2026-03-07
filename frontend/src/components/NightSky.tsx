@@ -38,10 +38,17 @@ const getSpectralColor = (spectralType: string | null): THREE.Color => {
 };
 
 export const NightSky = () => {
-  const { stars, setHoveredStar, setSelectedStar } = useSkyStore();
+  const { stars, constellationExtraStars, setHoveredStar, setSelectedStar } =
+    useSkyStore();
   const { selectedConstellation } = useConstellationStore();
   const { showAzAltGrid } = useSkyStore();
   const materialRef = useRef<THREE.ShaderMaterial>(null);
+
+  // Toutes les étoiles à afficher : normales + extras du pattern
+  const allStars = useMemo(
+    () => [...stars, ...constellationExtraStars],
+    [stars, constellationExtraStars],
+  );
 
   // Stabiliser les uniforms pour éviter la réinitialisation par React
   const uniforms = useMemo(
@@ -75,7 +82,7 @@ export const NightSky = () => {
     const highlightsData: number[] = [];
     const starMapData = new Map<number, VisibleStar>();
 
-    stars.forEach((star, index) => {
+    allStars.forEach((star, index) => {
       const [x, y, z] = altAzToXYZ(star.altitude, star.azimuth, SKY_RADIUS);
 
       positionsData.push(x, y, z);
@@ -104,7 +111,7 @@ export const NightSky = () => {
       highlights: new Float32Array(highlightsData),
       starMap: starMapData,
     };
-  }, [stars, constellationHipIds]);
+  }, [allStars, constellationHipIds]);
 
   // Animation shader : scintillement des étoiles + transition highlight constellation
   useFrame((_state, delta) => {

@@ -8,15 +8,16 @@ interface SkyState {
   viewMode: ViewMode;
   timestamp: string | undefined;
   stars: VisibleStar[];
+  /** Étoiles du pattern de constellation absentes de stars[] (mag > 5) */
+  constellationExtraStars: VisibleStar[];
   loadingStars: boolean;
   hoveredStar: VisibleStar | null;
   selectedStar: VisibleStar | null;
   error: string | null;
 
-  // Coordonnées courantes pour pouvoir refetcher
+  // Coordonnées courantes pour pouvoir fetcher les extras
   currentLat: number | null;
   currentLon: number | null;
-  magLimit: number;
 
   setViewMode: (mode: ViewMode) => void;
   setTimestamp: (iso: string) => void;
@@ -25,8 +26,13 @@ interface SkyState {
     lon: number,
     timestamp?: string,
   ) => Promise<void>;
-  /** Refetch les étoiles avec une nouvelle limite de magnitude (sans changer lat/lon) */
-  refetchWithMagLimit: (magLimit: number) => Promise<void>;
+  /**
+   * Fetche uniquement les étoiles manquantes pour le pattern d'une constellation.
+   * Ne modifie PAS stars[] — stocke le résultat dans constellationExtraStars.
+   */
+  fetchConstellationExtras: (patternHipIds: Set<number>) => Promise<void>;
+  /** Vide les étoiles supplémentaires lors de la déselection */
+  clearConstellationExtras: () => void;
   setHoveredStar: (star: VisibleStar | null) => void;
   setSelectedStar: (star: VisibleStar | null) => void;
   cameraTarget: [number, number, number] | null;
@@ -39,13 +45,13 @@ export const useSkyStore = create<SkyState>((set, get) => ({
   viewMode: "globe",
   timestamp: undefined,
   stars: [],
+  constellationExtraStars: [],
   loadingStars: false,
   hoveredStar: null,
   selectedStar: null,
   error: null,
   currentLat: null,
   currentLon: null,
-  magLimit: 5,
 
   setViewMode: (mode) => set({ viewMode: mode }),
   setTimestamp: (iso) => set({ timestamp: iso }),
@@ -53,12 +59,7 @@ export const useSkyStore = create<SkyState>((set, get) => ({
   fetchVisibleStars: async (lat, lon, timestamp) => {
     set({ loadingStars: true, error: null, currentLat: lat, currentLon: lon });
     try {
-      const data = await astronomyService.getVisibleStars(
-        lat,
-        lon,
-        timestamp,
-        get().magLimit,
-      );
+      const data = await astronomyService.getVisibleStars(lat, lon, timestamp);
       set({ stars: data, loadingStars: false });
     } catch (err: unknown) {
       set({
@@ -72,29 +73,70 @@ export const useSkyStore = create<SkyState>((set, get) => ({
     }
   },
 
-  refetchWithMagLimit: async (magLimit) => {
-    const { currentLat, currentLon, timestamp } = get();
-    if (currentLat === null || currentLon === null) return;
-    set({ loadingStars: true, error: null, magLimit });
+  fetchConstellationExtras: async (patternHipIds) => {
+    const { currentLat, currentLon, timestamp, stars } = get();
+    console.log("[DEBUG] fetchConstellationExtras called", {
+      patternHipIds: [...patternHipIds],
+      currentLat,
+      currentLon,
+      starsCount: stars.length,
+    });
+
+    if (
+      currentLat === null ||
+      currentLon === null ||
+      patternHipIds.size === 0
+    ) {
+      console.log("[DEBUG] Early return: missing lat/lon or hipIds");
+      return;
+    }
+
+    const alreadyLoaded = new Set(
+      stars.filter((s) => s.hip_id !== null).map((s) => s.hip_id!),
+    );
+
+    const missingHipIds = [...patternHipIds].filter(
+      (id) => !alreadyLoaded.has(id),
+    );
+    console.log("[DEBUG] Missing hip_ids:", missingHipIds);
+
+    if (missingHipIds.length === 0) {
+      console.log(
+        "[DEBUG] All pattern stars already in stars[], no extras needed",
+      );
+      return;
+    }
+
     try {
-      const data = await astronomyService.getVisibleStars(
+      const allBright = await astronomyService.getVisibleStars(
         currentLat,
         currentLon,
         timestamp,
-        magLimit,
+        8,
       );
-      set({ stars: data, loadingStars: false });
-    } catch (err: unknown) {
-      set({
-        error:
-          err instanceof Error
-            ? err.message
-            : "Erreur lors du refetch des étoiles",
-        loadingStars: false,
-      });
-      console.error("Échec de refetchWithMagLimit:", err);
+      console.log(
+        "[DEBUG] Fetched with mag_limit=8:",
+        allBright.length,
+        "stars",
+      );
+
+      const extras = allBright.filter(
+        (s) =>
+          s.hip_id !== null &&
+          patternHipIds.has(s.hip_id) &&
+          !alreadyLoaded.has(s.hip_id),
+      );
+      console.log(
+        "[DEBUG] Extras found:",
+        extras.map((s) => ({ hip_id: s.hip_id, mag: s.magnitude })),
+      );
+      set({ constellationExtraStars: extras });
+    } catch (err) {
+      console.error("Échec de fetchConstellationExtras:", err);
     }
   },
+
+  clearConstellationExtras: () => set({ constellationExtraStars: [] }),
 
   setHoveredStar: (star) => set({ hoveredStar: star }),
   setSelectedStar: (star) => set({ selectedStar: star }),
