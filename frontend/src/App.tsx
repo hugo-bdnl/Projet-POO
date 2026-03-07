@@ -189,6 +189,9 @@ function App() {
         camera={{ position: [0, 0, 3], fov: 50 }}
         dpr={[1, 1.5]}
         gl={{ localClippingEnabled: true }}
+        raycaster={{
+          params: { Points: { threshold: 0.3 } } as THREE.RaycasterParameters,
+        }}
       >
         <color attach="background" args={["#000000"]} />
         <ambientLight intensity={0.2} />

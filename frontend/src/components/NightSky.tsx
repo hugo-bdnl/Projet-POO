@@ -41,7 +41,6 @@ export const NightSky = () => {
   const { stars, setHoveredStar, setSelectedStar } = useSkyStore();
   const { selectedConstellation } = useConstellationStore();
   const { showAzAltGrid } = useSkyStore();
-  const skyGroupRef = useRef<THREE.Group>(null);
   const materialRef = useRef<THREE.ShaderMaterial>(null);
 
   // Stabiliser les uniforms pour éviter la réinitialisation par React
@@ -107,11 +106,8 @@ export const NightSky = () => {
     };
   }, [stars, constellationHipIds]);
 
-  // Lent mouvement de rotation de la voute celeste pour faire vivant
+  // Animation shader : scintillement des étoiles + transition highlight constellation
   useFrame((_state, delta) => {
-    if (skyGroupRef.current) {
-      skyGroupRef.current.rotation.y += 0.0001;
-    }
     if (materialRef.current) {
       materialRef.current.uniforms.uTime.value += delta;
       // Smooth transition du highlight
@@ -138,8 +134,8 @@ export const NightSky = () => {
   };
 
   return (
-    <group ref={skyGroupRef}>
-      <MilkyWay />
+    <group>
+      {<MilkyWay />}
       <CompassRose />
       <ConstellationPattern />
       {showAzAltGrid && <AzAltGrid />}

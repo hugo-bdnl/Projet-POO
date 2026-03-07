@@ -245,18 +245,7 @@ export function SidePanel() {
               ←
             </button>
           )}
-          <h2>🌌 Ciel Nocturne</h2>
-          <p
-            style={{
-              margin: 0,
-              paddingBottom: "15px",
-              color: "#ccc",
-              fontSize: "0.9em",
-              borderBottom: "1px solid #333",
-            }}
-          >
-            Depuis {selectedPoint?.name}
-          </p>
+          <h2>Depuis {selectedPoint?.name}</h2>
 
           {loadingStars && (
             <div style={{ marginTop: "20px", textAlign: "center" }}>

@@ -38,7 +38,7 @@ export const astronomyService = {
     lon: number,
     timestamp?: string,
   ): Promise<VisibleStar[]> => {
-    const params: Record<string, string | number> = { lat, lon, mag_limit: 6 };
+    const params: Record<string, string | number> = { lat, lon, mag_limit: 5 };
     if (timestamp) params.timestamp = timestamp;
 
     const response = await apiClient.get<VisibleStar[]>("/api/stars/visible", {
