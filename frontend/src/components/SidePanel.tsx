@@ -207,7 +207,7 @@ export function SidePanel() {
 
           {!selectedPoint && (
             <>
-              <h2>Exploration</h2>
+              <h2>Terre</h2>
               <p style={{ color: "grey", fontSize: "0.9em" }}>
                 Cliquez un point sur le globe pour explorer ce lieu.
               </p>

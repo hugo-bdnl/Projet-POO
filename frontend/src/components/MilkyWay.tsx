@@ -46,10 +46,10 @@ export function MilkyWay() {
         map={texture}
         side={THREE.BackSide}
         blending={THREE.AdditiveBlending}
-        color="#d1d1d1ff"
+        color="#999999"
         depthWrite={false}
         toneMapped={false}
-        opacity={0.15}
+        opacity={0.1}
         transparent
         clippingPlanes={clippingPlanes}
       />

@@ -252,7 +252,7 @@ export function ConstellationSidebar() {
         </svg>
       </button>
       <div className="sidebar-header">
-        <h2>Catalogue</h2>
+        <h2>IAU Constellations</h2>
         <input
           type="text"
           placeholder="Rechercher une constellation..."
@@ -264,7 +264,7 @@ export function ConstellationSidebar() {
 
       <div className="sidebar-content">
         {loadingList ? (
-          <p className="loading-text">Chargement du catalogue...</p>
+          <p className="loading-text">Chargement des constellations...</p>
         ) : (
           <div className="constellation-grid">
             {filteredConstellations.map((c) => (
