@@ -26,7 +26,7 @@ const GALACTIC_TILT_RAD = (62 * Math.PI) / 180;
 const HORIZON_CLIP_PLANE = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
 
 export function MilkyWay() {
-  const texture = useTexture("/textures/milkyway.jpg");
+  const texture = useTexture("/textures/milkyway.webp");
 
   // Configuration de la texture pour éviter les artefacts
   texture.wrapS = THREE.RepeatWrapping;
@@ -46,10 +46,10 @@ export function MilkyWay() {
         map={texture}
         side={THREE.BackSide}
         blending={THREE.AdditiveBlending}
-        color="#999999"
+        color="#ffffff"
         depthWrite={false}
         toneMapped={false}
-        opacity={0.1}
+        opacity={1}
         transparent
         clippingPlanes={clippingPlanes}
       />

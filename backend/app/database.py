@@ -9,10 +9,12 @@ from sqlalchemy.orm import sessionmaker, DeclarativeBase
 from app.config import settings
 
 
-# Moteur SQLAlchemy — connect_args nécessaire pour SQLite (thread safety)
+# Moteur SQLAlchemy — connect_args nécessaire UNIQUEMENT pour SQLite (thread safety)
+connect_args = {"check_same_thread": False} if settings.DATABASE_URL.startswith("sqlite") else {}
+
 engine = create_engine(
     settings.DATABASE_URL,
-    connect_args={"check_same_thread": False},
+    connect_args=connect_args,
     echo=settings.DEBUG,
 )
 

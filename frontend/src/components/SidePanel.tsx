@@ -158,6 +158,35 @@ export function SidePanel() {
     );
   }
 
+  if (viewMode === "system") {
+    return (
+      <div className="side-panel">
+        <h2>☀️ Système Solaire</h2>
+        <p style={{ color: "grey", fontSize: "0.9em", marginTop: "10px" }}>
+          Vous observez notre système stellaire en temps réel. L'échelle des
+          planètes et des orbites est ajustée pour une meilleure visualisation.
+        </p>
+        <button
+          className="action-button"
+          onClick={() => setViewMode("globe")}
+          style={{
+            marginTop: "30px",
+            width: "100%",
+            padding: "12px",
+            backgroundColor: "#22ccff",
+            color: "#000",
+            fontWeight: "bold",
+            border: "none",
+            borderRadius: "6px",
+            cursor: "pointer",
+          }}
+        >
+          🌍 Retourner sur Terre
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div
       className={`side-panel${viewMode === "sky" ? " side-panel--sky" : ""}`}

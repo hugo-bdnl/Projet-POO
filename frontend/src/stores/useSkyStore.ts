@@ -2,7 +2,7 @@ import { create } from "zustand";
 import type { VisibleStar } from "../types";
 import { astronomyService } from "../services/api";
 
-type ViewMode = "globe" | "sky";
+type ViewMode = "globe" | "sky" | "system";
 
 interface SkyState {
   viewMode: ViewMode;
@@ -42,7 +42,7 @@ interface SkyState {
 }
 
 export const useSkyStore = create<SkyState>((set, get) => ({
-  viewMode: "globe",
+  viewMode: "system",
   timestamp: undefined,
   stars: [],
   constellationExtraStars: [],

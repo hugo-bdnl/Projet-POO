@@ -11,6 +11,8 @@ import { StarTooltip } from "./components/StarTooltip";
 import { TimeSlider } from "./components/TimeSlider";
 import { ConstellationGuide } from "./components/ConstellationGuide";
 import { EarthGuide } from "./components/EarthGuide";
+import { SolarSystem } from "./components/SolarSystem";
+import { Loader3D } from "./components/Loader3D";
 import { useSkyStore } from "./stores/useSkyStore";
 import { useConstellationStore } from "./stores/useConstellationStore";
 import { useObservationStore } from "./stores/useObservationStore";
@@ -26,6 +28,7 @@ import "./App.css";
 // Vecteurs cibles pré-alloués (évite 120 allocations/s dans useFrame)
 const SKY_CAMERA_POS = new THREE.Vector3(0, -0.15, 0.1);
 const GLOBE_CAMERA_POS = new THREE.Vector3(0, 0, 2.5);
+const SYSTEM_CAMERA_POS = new THREE.Vector3(0, 45, 60); // Vue de dessus plus reculée
 const ORIGIN = new THREE.Vector3(0, 0, 0);
 
 function CameraController({
@@ -56,9 +59,13 @@ function CameraController({
       // Position caméra à l'origine pour vue immersive (horizon)
       state.camera.position.lerp(SKY_CAMERA_POS, lerpFactor);
       controlsRef.current.target.lerp(ORIGIN, lerpFactor);
-    } else {
+    } else if (viewMode === "globe") {
       // Mode Globe : orbite lointaine
       state.camera.position.lerp(GLOBE_CAMERA_POS, lerpFactor);
+      controlsRef.current.target.lerp(ORIGIN, lerpFactor);
+    } else {
+      // Mode System: Vue surplombante globale
+      state.camera.position.lerp(SYSTEM_CAMERA_POS, lerpFactor);
       controlsRef.current.target.lerp(ORIGIN, lerpFactor);
     }
   });
@@ -93,12 +100,15 @@ function App() {
   useEffect(() => {
     if (controlsRef.current) {
       if (viewMode === "globe") {
-        controlsRef.current.minDistance = 2.5; // Empêche de zoomer dans la terre/atmosphère
-        controlsRef.current.maxDistance = 6; // Empêche de dézoomer à l'infini
-      } else {
-        // En mode Ciel, vue 1re personne, distance quasi 0
+        controlsRef.current.minDistance = 2.5;
+        controlsRef.current.maxDistance = 6;
+      } else if (viewMode === "sky") {
         controlsRef.current.minDistance = 0.05;
         controlsRef.current.maxDistance = Infinity;
+      } else {
+        // Mode system
+        controlsRef.current.minDistance = 6;
+        controlsRef.current.maxDistance = 500;
       }
       controlsRef.current.update();
     }
@@ -199,8 +209,11 @@ function App() {
           <directionalLight position={[5, 3, 5]} intensity={2} />
         )}
 
-        <Suspense fallback={null}>
-          {viewMode === "globe" ? <Globe /> : <NightSky />}
+        <Suspense fallback={<Loader3D />}>
+          {viewMode === "system" && <SolarSystem />}
+          {viewMode === "globe" && <Globe />}
+          {viewMode === "sky" && <NightSky />}
+
           <StarTooltip />
           {viewMode === "sky" && <Effects />}
           {viewMode === "sky" && <ConstellationGuide />}
@@ -212,8 +225,12 @@ function App() {
           ref={controlsRef}
           enableDamping
           dampingFactor={0.05}
-          minDistance={viewMode === "globe" ? 2.5 : 0.05}
-          maxDistance={viewMode === "globe" ? 6 : Infinity}
+          minDistance={
+            viewMode === "globe" ? 2.5 : viewMode === "sky" ? 0.05 : 6
+          }
+          maxDistance={
+            viewMode === "globe" ? 6 : viewMode === "sky" ? Infinity : 500
+          }
         />
         <CameraController controlsRef={controlsRef} />
       </Canvas>
