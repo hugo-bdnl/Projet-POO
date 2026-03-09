@@ -18,8 +18,10 @@ interface ConstellationState {
   error: string | null;
   /** Mapping abréviation → nom complet (fr de préférence) */
   constellationNameMap: Record<string, string>;
+  isConstellationSidebarOpen: boolean;
 
   setSearchQuery: (q: string) => void;
+  setConstellationSidebarOpen: (isOpen: boolean) => void;
   fetchAllConstellations: () => Promise<void>;
   fetchConstellationDetailAndLocation: (
     id: number,
@@ -40,8 +42,10 @@ export const useConstellationStore = create<ConstellationState>((set, get) => ({
   loadingDetail: false,
   error: null,
   constellationNameMap: {},
-
+  isConstellationSidebarOpen: true,
   setSearchQuery: (q) => set({ searchQuery: q }),
+  setConstellationSidebarOpen: (isOpen) =>
+    set({ isConstellationSidebarOpen: isOpen }),
 
   fetchAllConstellations: async () => {
     // Only fetch once

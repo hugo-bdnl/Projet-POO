@@ -1,9 +1,6 @@
 import { Suspense, useEffect, useState, useRef } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
-import {
-  OrbitControls,
-  Stars,
-} from "@react-three/drei";
+import { OrbitControls, Stars } from "@react-three/drei";
 import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
 import { Globe } from "./components/Globe";
 import { SidePanel } from "./components/SidePanel";
@@ -21,7 +18,7 @@ import { Loader3D } from "./components/Loader3D";
 import { useSkyStore } from "./stores/useSkyStore";
 import { useConstellationStore } from "./stores/useConstellationStore";
 import { useObservationStore } from "./stores/useObservationStore";
-import { computePlanetPositions } from "./utils/planetaryEphemeris";
+import { TransitionScreen } from "./components/TransitionScreen";
 import * as THREE from "three";
 import "./App.css";
 
@@ -41,24 +38,21 @@ function CameraController({
 }: {
   controlsRef: React.RefObject<OrbitControlsImpl | null>;
 }) {
-  const { viewMode, selectedPlanet, timestamp } = useSkyStore();
+  const { viewMode, selectedPlanet } = useSkyStore();
   const transitionTime = useRef(0);
   const prevMode = useRef(viewMode);
   const prevPlanet = useRef(selectedPlanet);
-
-  // Cette ref sert à sauvegarder l'angle d'approche de la caméra pendant l'animation dans le Système Solaire.
-  const lastCameraOffset = useRef(new THREE.Vector3(0, 0, 1));
 
   useFrame((state, delta) => {
     // Si la transition vient d'être déclenchée
     if (prevMode.current !== viewMode) {
       if (viewMode === "globe" && prevMode.current === "system") {
-        // Handoff parfait : on place la caméra EXACTEMENT au même angle relatif par rapport à la planète
-        // que ce qu'on avait à la fin du Système Solaire.
-        const planetRatio = PLANETS_METADATA[selectedPlanet || "earth"]?.visualSize || 1;
+        // Handoff simplifié: on initialise la vue face à la planète
+        const planetRatio =
+          PLANETS_METADATA[selectedPlanet || "earth"]?.visualSize || 1;
         const dist = planetRatio * 3.5;
 
-        state.camera.position.copy(lastCameraOffset.current).normalize().multiplyScalar(dist);
+        state.camera.position.set(0, 0, dist);
         controlsRef.current?.target.set(0, 0, 0);
       }
       transitionTime.current = 0;
@@ -72,13 +66,6 @@ function CameraController({
 
     transitionTime.current += delta;
 
-    // Si on est en "system" et qu'on a sélectionné une planète, au bout d'1.5s de voyage, 
-    // on bascule silencieusement dans le mode "globe" haute définition.
-    if (viewMode === "system" && selectedPlanet && transitionTime.current > 1.5) {
-      useSkyStore.getState().setViewMode("globe");
-      return;
-    }
-
     // Transition terminée → l'utilisateur a le contrôle exclusif via OrbitControls
     if (transitionTime.current > 1.5) return;
     if (!controlsRef.current) return;
@@ -89,45 +76,21 @@ function CameraController({
       state.camera.position.lerp(SKY_CAMERA_POS, lerpFactor);
       controlsRef.current.target.lerp(ORIGIN, lerpFactor);
     } else if (viewMode === "globe") {
-      // Lerp vers l'orbite lointaine si on recule depuis un zoom trop grand,
-      // la position d'origine vient du 'handoff' plus haut
-      const planetRatio = PLANETS_METADATA[selectedPlanet || "earth"]?.visualSize || 1;
+      // Lerp vers l'orbite lointaine si on recule depuis un zoom trop grand
+      const planetRatio =
+        PLANETS_METADATA[selectedPlanet || "earth"]?.visualSize || 1;
       const dist = planetRatio * 3.5;
 
-      const targetCamPos = state.camera.position.clone().normalize().multiplyScalar(dist);
+      const targetCamPos = state.camera.position
+        .clone()
+        .normalize()
+        .multiplyScalar(dist);
       state.camera.position.lerp(targetCamPos, lerpFactor);
       controlsRef.current.target.lerp(ORIGIN, lerpFactor);
     } else {
       // Mode System: Vue surplombante globale
-      if (selectedPlanet) {
-        // Animation zoom vers la planète
-        const calcDate = timestamp ? new Date(timestamp) : new Date();
-        const positions = computePlanetPositions(calcDate, true);
-        const pData = positions.get(selectedPlanet);
-        if (pData) {
-          const targetPos = pData.position3D;
-          controlsRef.current.target.lerp(targetPos, lerpFactor);
-
-          // On maintient la distance par rapport à l'objet
-          const currentDir = state.camera.position.clone().sub(targetPos);
-          if (currentDir.lengthSq() < 0.1) currentDir.set(0, 0, 1);
-
-          // Sauvegarde de l'angle pour le moment où on basculera en Globe.
-          lastCameraOffset.current.copy(currentDir);
-
-          // Distance standardisée dans tout le système
-          const planetRatio = PLANETS_METADATA[selectedPlanet]?.visualSize || 1;
-          let dist = planetRatio * 3.5;
-          if (selectedPlanet === "sun") dist = 35; // Exception soleil trop massif
-
-          const desiredCamPos = targetPos.clone().add(currentDir.normalize().multiplyScalar(dist));
-          state.camera.position.lerp(desiredCamPos, lerpFactor);
-        }
-      } else {
-        // Retour vue globale
-        state.camera.position.lerp(SYSTEM_CAMERA_POS, lerpFactor);
-        controlsRef.current.target.lerp(ORIGIN, lerpFactor);
-      }
+      state.camera.position.lerp(SYSTEM_CAMERA_POS, lerpFactor);
+      controlsRef.current.target.lerp(ORIGIN, lerpFactor);
     }
   });
 
@@ -162,7 +125,8 @@ function App() {
   useEffect(() => {
     if (controlsRef.current) {
       if (viewMode === "globe") {
-        const planetSize = PLANETS_METADATA[selectedPlanet || "earth"]?.visualSize || 1;
+        const planetSize =
+          PLANETS_METADATA[selectedPlanet || "earth"]?.visualSize || 1;
         controlsRef.current.minDistance = planetSize * 1.5;
         controlsRef.current.maxDistance = planetSize * 10.0;
       } else if (viewMode === "sky") {
@@ -251,6 +215,9 @@ function App() {
       {/* Toast Notification */}
       {toastMessage && <div className="toast-container">⚠️ {toastMessage}</div>}
 
+      {/* Ecran de transition futuriste */}
+      <TransitionScreen />
+
       {/* Panneau latéral HTML UI - Tâches 2 & 6 */}
       <SidePanel />
       {/* Barre unifiée pour chercher et afficher les constellations en mode globe */}
@@ -298,10 +265,20 @@ function App() {
           enableDamping
           dampingFactor={0.05}
           minDistance={
-            viewMode === "globe" ? (PLANETS_METADATA[selectedPlanet || "earth"]?.visualSize || 1) * 1.5 : viewMode === "sky" ? 0.05 : 6
+            viewMode === "globe"
+              ? (PLANETS_METADATA[selectedPlanet || "earth"]?.visualSize || 1) *
+                1.5
+              : viewMode === "sky"
+                ? 0.05
+                : 6
           }
           maxDistance={
-            viewMode === "globe" ? (PLANETS_METADATA[selectedPlanet || "earth"]?.visualSize || 1) * 10.0 : viewMode === "sky" ? Infinity : 500
+            viewMode === "globe"
+              ? (PLANETS_METADATA[selectedPlanet || "earth"]?.visualSize || 1) *
+                10.0
+              : viewMode === "sky"
+                ? Infinity
+                : 500
           }
         />
         <CameraController controlsRef={controlsRef} />

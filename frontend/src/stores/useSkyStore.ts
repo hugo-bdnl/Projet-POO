@@ -37,11 +37,16 @@ interface SkyState {
   clearConstellationExtras: () => void;
   setHoveredStar: (star: VisibleStar | null) => void;
   setSelectedStar: (star: VisibleStar | null) => void;
-  setSelectedPlanet: (planet: import("../types/planets").PlanetId | null) => void;
+  setSelectedPlanet: (
+    planet: import("../types/planets").PlanetId | null,
+  ) => void;
   cameraTarget: [number, number, number] | null;
   setCameraTarget: (target: [number, number, number] | null) => void;
   showAzAltGrid: boolean;
   toggleAzAltGrid: () => void;
+  isTransitioning: boolean;
+  startTransitionToGlobe: (planet: import("../types/planets").PlanetId) => void;
+  endTransitionToGlobe: () => void;
 }
 
 export const useSkyStore = create<SkyState>((set, get) => ({
@@ -153,4 +158,10 @@ export const useSkyStore = create<SkyState>((set, get) => ({
 
   showAzAltGrid: false,
   toggleAzAltGrid: () => set((s) => ({ showAzAltGrid: !s.showAzAltGrid })),
+
+  isTransitioning: false,
+  startTransitionToGlobe: (planet) =>
+    set({ isTransitioning: true, selectedPlanet: planet }),
+  endTransitionToGlobe: () =>
+    set({ isTransitioning: false, viewMode: "globe" }),
 }));

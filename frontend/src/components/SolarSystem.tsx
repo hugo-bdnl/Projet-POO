@@ -26,7 +26,7 @@ export function SolarSystem() {
   const sunMaterialRef = useRef<THREE.MeshBasicMaterial>(null);
   const sunLightRef = useRef<THREE.PointLight>(null);
 
-  const { setSelectedPlanet } = useSkyStore();
+  const { startTransitionToGlobe } = useSkyStore();
 
   useFrame((state) => {
     if (sunMaterialRef.current && sunLightRef.current) {
@@ -72,7 +72,7 @@ export function SolarSystem() {
         position={sunPos.position3D}
         onClick={(e) => {
           e.stopPropagation();
-          setSelectedPlanet("sun");
+          startTransitionToGlobe("sun");
         }}
         onPointerOver={(e) => {
           e.stopPropagation();
@@ -109,7 +109,7 @@ export function SolarSystem() {
               position={p.position3D}
               onClick={(e) => {
                 e.stopPropagation();
-                setSelectedPlanet(p.id);
+                startTransitionToGlobe(p.id);
               }}
               onPointerOver={(e) => {
                 e.stopPropagation();
@@ -120,7 +120,9 @@ export function SolarSystem() {
                 document.body.style.cursor = "auto";
               }}
             >
-              <sphereGeometry args={[PLANETS_METADATA[p.id].visualSize, 64, 64]} />
+              <sphereGeometry
+                args={[PLANETS_METADATA[p.id].visualSize, 64, 64]}
+              />
               <meshStandardMaterial
                 map={textures[p.id]}
                 roughness={p.id === "earth" || p.id === "venus" ? 0.4 : 0.7}

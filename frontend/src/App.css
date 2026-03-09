@@ -92,6 +92,19 @@ body {
   animation: slideFadeInLeft 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
+/* En mode globe, le panneau Terre principal est à gauche, et se décale si la barre latérale l'exige */
+.side-panel--globe-left {
+  right: auto;
+  left: 2rem;
+  border-radius: 16px;
+  animation: slideFadeInLeft 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.side-panel--globe-left.shifted {
+  transform: translateX(420px);
+}
+
 /* Scrollbar personnalisée */
 .side-panel::-webkit-scrollbar {
   width: 6px;

@@ -23,6 +23,7 @@ export function SidePanel() {
     clearSelection,
     constellationNameMap,
     fetchConstellationNames,
+    isConstellationSidebarOpen,
   } = useConstellationStore();
 
   const { selectedISS, issInfo, clearISSSelection } = useISSStore();
@@ -187,9 +188,16 @@ export function SidePanel() {
     );
   }
 
+  const isGlobeLeft = viewMode === "globe";
+  const isShifted =
+    isGlobeLeft &&
+    isConstellationSidebarOpen &&
+    (!useSkyStore.getState().selectedPlanet ||
+      useSkyStore.getState().selectedPlanet === "earth");
+
   return (
     <div
-      className={`side-panel${viewMode === "sky" ? " side-panel--sky" : ""}`}
+      className={`side-panel${viewMode === "sky" ? " side-panel--sky" : ""}${isGlobeLeft ? " side-panel--globe-left" : ""}${isShifted ? " shifted" : ""}`}
     >
       {viewMode === "globe" ? (
         <>
