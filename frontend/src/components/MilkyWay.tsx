@@ -1,7 +1,8 @@
-import { useMemo } from "react";
+import { useMemo, useRef, useEffect } from "react";
 import { useTexture } from "@react-three/drei";
 import * as THREE from "three";
-import { SKY_RADIUS } from "../utils/skyCoords";
+import { SKY_RADIUS, altAzToXYZ, computeGMST } from "../utils/skyCoords";
+import { useSkyStore } from "../stores/useSkyStore";
 
 /**
  * Dôme de la Voie Lactée — sphère céleste inversée.
@@ -35,24 +36,46 @@ export function MilkyWay() {
 
   const clippingPlanes = useMemo(() => [HORIZON_CLIP_PLANE], []);
 
+  const baseTimestamp = useSkyStore(s => s.baseTimestamp);
+  const currentLat = useSkyStore(s => s.currentLat);
+
+  const baseRotationRef = useRef<THREE.Group>(null);
+
+  useEffect(() => {
+    if (baseRotationRef.current && currentLat !== null && baseTimestamp) {
+      const gmst = computeGMST(new Date(baseTimestamp));
+      const [nx, ny, nz] = altAzToXYZ(currentLat, 0, 1);
+      const ncpVector = new THREE.Vector3(nx, ny, nz).normalize();
+
+      // La Voie Lactée (qui n'est pas recalculée par le Python) doit s'aligner 
+      // de manière absolue sur le temps courant renvoyé par le backend.
+      baseRotationRef.current.setRotationFromAxisAngle(
+        ncpVector,
+        THREE.MathUtils.degToRad(-gmst)
+      );
+    }
+  }, [baseTimestamp, currentLat]);
+
   return (
-    <mesh rotation={[0, 0, GALACTIC_TILT_RAD]} renderOrder={-1}>
-      {/*
+    <group ref={baseRotationRef}>
+      <mesh rotation={[0, 0, GALACTIC_TILT_RAD]} renderOrder={-1}>
+        {/*
         - SKY_RADIUS * 0.98 : légèrement en retrait des étoiles pour éviter le z-fighting
         - 64, 64 segments : assez de polygones pour que les pôles soient "ronds" et non facettés
       */}
-      <sphereGeometry args={[SKY_RADIUS * 0.98, 64, 64]} />
-      <meshBasicMaterial
-        map={texture}
-        side={THREE.BackSide}
-        blending={THREE.AdditiveBlending}
-        color="#ffffff"
-        depthWrite={false}
-        toneMapped={false}
-        opacity={1}
-        transparent
-        clippingPlanes={clippingPlanes}
-      />
-    </mesh>
+        <sphereGeometry args={[SKY_RADIUS * 0.98, 64, 64]} />
+        <meshBasicMaterial
+          map={texture}
+          side={THREE.BackSide}
+          blending={THREE.AdditiveBlending}
+          color="#ffffff"
+          depthWrite={false}
+          toneMapped={false}
+          opacity={1}
+          transparent
+          clippingPlanes={clippingPlanes}
+        />
+      </mesh>
+    </group>
   );
 }

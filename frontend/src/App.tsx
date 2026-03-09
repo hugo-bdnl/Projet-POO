@@ -205,9 +205,6 @@ function App() {
       >
         <color attach="background" args={["#000000"]} />
         <ambientLight intensity={0.2} />
-        {viewMode === "globe" && (
-          <directionalLight position={[5, 3, 5]} intensity={2} />
-        )}
 
         <Suspense fallback={<Loader3D />}>
           {viewMode === "system" && <SolarSystem />}

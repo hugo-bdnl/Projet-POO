@@ -4,6 +4,10 @@ import { useTexture, Stars } from "@react-three/drei";
 import * as THREE from "three";
 import { LocationMarker } from "./LocationMarker";
 import { useObservationStore } from "../stores/useObservationStore";
+import { useSkyStore } from "../stores/useSkyStore";
+import { computePlanetPositions } from "../utils/planetaryEphemeris";
+import { applyDayNightTerminator } from "../utils/dayNightShader";
+import { computeGMST } from "../utils/skyCoords";
 import { ISS } from "./ISS";
 
 export function Globe() {
@@ -11,6 +15,12 @@ export function Globe() {
 
   // Connexion au state manager
   const { points, fetchPoints } = useObservationStore();
+  // On ne destructure PAS timestamp ici pour éviter un re-render complet de la Terre 60 fois par seconde pendant le *scrubbing* du TimeSlider.
+
+  const customUniformsRef = useRef({
+    uSunDirection: { value: new THREE.Vector3(1, 0, 0) }
+  });
+  const directionalLightRef = useRef<THREE.DirectionalLight>(null);
 
   // On fetch les 50 villes uniquement au montage du composant
   useEffect(() => {
@@ -25,15 +35,46 @@ export function Globe() {
     "/textures/earth_night.webp",
   ]);
 
-  // Rotation lente automatique du globe terrestre sur son axe Y
-  useFrame((_state, delta) => {
+  useFrame(() => {
+    // Lecture "Transiente" de Zustand, ultra rapide et sans re-render React.
+    const tsStr = useSkyStore.getState().timestamp;
+    const calculationDate = tsStr ? new Date(tsStr) : new Date();
+
     if (meshRef.current) {
-      meshRef.current.rotation.y += delta * 0.05;
+      // Calcul du Temps Sidéral Moyen de Greenwich pour aligner la rotation de la Terre
+      const gmstDeg = computeGMST(calculationDate);
+      // THREE.js attend des radians.
+      meshRef.current.rotation.y = THREE.MathUtils.degToRad(gmstDeg);
+    }
+
+    const planets = computePlanetPositions(calculationDate, true);
+    const earthPos = planets.get("earth")!.position3D;
+    // Direction Terre -> Soleil : Vecteur inverse de la position de la Terre par rapport au Soleil (0,0,0)
+    const sunDirection = earthPos.clone().negate().normalize();
+
+    customUniformsRef.current.uSunDirection.value.copy(sunDirection);
+
+    if (directionalLightRef.current) {
+      // Pour une lumière directionnelle, la position définit la direction depuis laquelle la lumière vient (vers 0,0,0)
+      directionalLightRef.current.position.copy(sunDirection).multiplyScalar(5);
     }
   });
 
   return (
     <>
+      {/* Lumière directionnelle principale (Soleil) */}
+      <directionalLight ref={directionalLightRef} intensity={2.5} />
+
+      {/* Représentation visuelle du Soleil au loin */}
+      <mesh position={customUniformsRef.current.uSunDirection.value.clone().multiplyScalar(150)}>
+        <sphereGeometry args={[5, 32, 32]} />
+        <meshBasicMaterial color="#fffcf2" />
+        {/* Glow du soleil (Aura) */}
+        <mesh>
+          <sphereGeometry args={[7, 32, 32]} />
+          <meshBasicMaterial color="#ffcc00" transparent opacity={0.3} blending={THREE.AdditiveBlending} />
+        </mesh>
+      </mesh>
       <Stars
         radius={100}
         depth={50}
@@ -57,7 +98,11 @@ export function Globe() {
           metalness={0.4}
           emissiveMap={emissiveMap}
           emissive={new THREE.Color(0xffffff)}
-          emissiveIntensity={0.2}
+          emissiveIntensity={1.0} // Pleine intensité de base, modulée par le shader
+          onBeforeCompile={(shader) => {
+            applyDayNightTerminator(shader);
+            shader.uniforms.uSunDirection = customUniformsRef.current.uSunDirection;
+          }}
         />
         {/* 50 Points d'observation depuis l'API */}
         {points.map((pt) => (

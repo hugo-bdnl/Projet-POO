@@ -7,6 +7,7 @@ type ViewMode = "globe" | "sky" | "system";
 interface SkyState {
   viewMode: ViewMode;
   timestamp: string | undefined;
+  baseTimestamp: string | undefined;
   stars: VisibleStar[];
   /** Étoiles du pattern de constellation absentes de stars[] (mag > 5) */
   constellationExtraStars: VisibleStar[];
@@ -44,6 +45,7 @@ interface SkyState {
 export const useSkyStore = create<SkyState>((set, get) => ({
   viewMode: "system",
   timestamp: undefined,
+  baseTimestamp: undefined,
   stars: [],
   constellationExtraStars: [],
   loadingStars: false,
@@ -60,7 +62,8 @@ export const useSkyStore = create<SkyState>((set, get) => ({
     set({ loadingStars: true, error: null, currentLat: lat, currentLon: lon });
     try {
       const data = await astronomyService.getVisibleStars(lat, lon, timestamp);
-      set({ stars: data, loadingStars: false });
+      const fetchedTime = timestamp || new Date().toISOString();
+      set({ stars: data, loadingStars: false, baseTimestamp: fetchedTime });
     } catch (err: unknown) {
       set({
         error:

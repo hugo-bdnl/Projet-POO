@@ -62,3 +62,17 @@ export function altAzToXYZ(
     radius * Math.cos(altRad) * -Math.sin(azRad),
   ];
 }
+
+export function computeGMST(date: Date): number {
+  const jd =
+    date.getTime() / 86400000.0 +
+    2440587.5;
+  const t = (jd - 2451545.0) / 36525.0;
+  let gmst =
+    280.46061837 +
+    360.98564736629 * (jd - 2451545.0) +
+    0.000387933 * t * t -
+    (t * t * t) / 38710000.0;
+  gmst = (gmst % 360.0 + 360.0) % 360.0;
+  return gmst;
+}

@@ -91,14 +91,15 @@ function compressRadius(au: number): number {
 
 export function computePlanetPositions(
   date: Date,
+  skipOrbits: boolean = false
 ): Map<PlanetId, PlanetPosition> {
   const jd = new julian.CalendarGregorian(
     date.getUTCFullYear(),
     date.getUTCMonth() + 1, // astronomia months are 1-based
     date.getUTCDate() +
-      date.getUTCHours() / 24 +
-      date.getUTCMinutes() / 1440 +
-      date.getUTCSeconds() / 86400,
+    date.getUTCHours() / 24 +
+    date.getUTCMinutes() / 1440 +
+    date.getUTCSeconds() / 86400,
   ).toJD();
 
   const positions = new Map<PlanetId, PlanetPosition>();
@@ -125,23 +126,25 @@ export function computePlanetPositions(
     const renderedRadius = compressRadius(helio.range);
     const pos3D = sphericalToVector3(helio.lon, helio.lat, renderedRadius);
 
-    // Génération du tracé de l'orbite (128 segments)
-    const pointsCount = 128;
-    const period = ORBITAL_PERIODS_DAYS[pId];
-    const step = period / pointsCount;
+    // Génération du tracé de l'orbite (128 segments) uniquement si demandé (sinon ça lag sévèrement dans useFrame)
     const orbitPoints: THREE.Vector3[] = [];
+    if (!skipOrbits) {
+      const pointsCount = 128;
+      const period = ORBITAL_PERIODS_DAYS[pId];
+      const step = period / pointsCount;
 
-    // On calcule la position à différents jours pour tracer l'ellipse exacte (inclinaison comprise)
-    for (let i = 0; i <= pointsCount; i++) {
-      const orbitJd = jd + i * step;
-      const helioOrbit = planet.position(orbitJd);
-      const orbitRenderedRadius = compressRadius(helioOrbit.range);
-      const orbitPos3D = sphericalToVector3(
-        helioOrbit.lon,
-        helioOrbit.lat,
-        orbitRenderedRadius,
-      );
-      orbitPoints.push(orbitPos3D);
+      // On calcule la position à différents jours pour tracer l'ellipse exacte (inclinaison comprise)
+      for (let i = 0; i <= pointsCount; i++) {
+        const orbitJd = jd + i * step;
+        const helioOrbit = planet.position(orbitJd);
+        const orbitRenderedRadius = compressRadius(helioOrbit.range);
+        const orbitPos3D = sphericalToVector3(
+          helioOrbit.lon,
+          helioOrbit.lat,
+          orbitRenderedRadius,
+        );
+        orbitPoints.push(orbitPos3D);
+      }
     }
 
     positions.set(pId, {
