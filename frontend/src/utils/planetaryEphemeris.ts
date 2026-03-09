@@ -83,23 +83,23 @@ function compressRadius(au: number): number {
   if (au === 0) return 0;
   // Compressons les distances de façon artificielle pour la vue 3D
   // Le Soleil ayant un rayon de 12 unités, l'orbite 0 commence au-delà.
-  // Exposant encore plus agressif (0.65 au lieu de 0.8) pour rapprocher Uranus et Neptune :
-  // 1 AU = ~25 unités
-  // 30 AU (Neptune) = ~90 unités
-  return 15 + Math.pow(au, 0.65) * 12;
+  // Exposant ajusté pour écarter suffisamment les planètes intérieures (éviter collisions Terre/Vénus) :
+  // 1 AU = ~43 unités
+  // 30 AU (Neptune) = ~154 unités
+  return 18 + Math.pow(au, 0.5) * 25;
 }
 
 export function computePlanetPositions(
   date: Date,
-  skipOrbits: boolean = false
+  skipOrbits: boolean = false,
 ): Map<PlanetId, PlanetPosition> {
   const jd = new julian.CalendarGregorian(
     date.getUTCFullYear(),
     date.getUTCMonth() + 1, // astronomia months are 1-based
     date.getUTCDate() +
-    date.getUTCHours() / 24 +
-    date.getUTCMinutes() / 1440 +
-    date.getUTCSeconds() / 86400,
+      date.getUTCHours() / 24 +
+      date.getUTCMinutes() / 1440 +
+      date.getUTCSeconds() / 86400,
   ).toJD();
 
   const positions = new Map<PlanetId, PlanetPosition>();

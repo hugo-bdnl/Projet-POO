@@ -26,7 +26,7 @@ export function SolarSystem() {
   const sunMaterialRef = useRef<THREE.MeshBasicMaterial>(null);
   const sunLightRef = useRef<THREE.PointLight>(null);
 
-  const { startTransitionToGlobe } = useSkyStore();
+  const { transitionToMode } = useSkyStore();
 
   useFrame((state) => {
     if (sunMaterialRef.current && sunLightRef.current) {
@@ -72,7 +72,7 @@ export function SolarSystem() {
         position={sunPos.position3D}
         onClick={(e) => {
           e.stopPropagation();
-          startTransitionToGlobe("sun");
+          transitionToMode("globe", "sun");
         }}
         onPointerOver={(e) => {
           e.stopPropagation();
@@ -109,7 +109,7 @@ export function SolarSystem() {
               position={p.position3D}
               onClick={(e) => {
                 e.stopPropagation();
-                startTransitionToGlobe(p.id);
+                transitionToMode("globe", p.id);
               }}
               onPointerOver={(e) => {
                 e.stopPropagation();

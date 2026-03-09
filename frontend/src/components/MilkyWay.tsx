@@ -3,6 +3,7 @@ import { useTexture } from "@react-three/drei";
 import * as THREE from "three";
 import { SKY_RADIUS, altAzToXYZ, computeGMST } from "../utils/skyCoords";
 import { useSkyStore } from "../stores/useSkyStore";
+import { useThree } from "@react-three/fiber";
 
 /**
  * Dôme de la Voie Lactée — sphère céleste inversée.
@@ -28,16 +29,22 @@ const HORIZON_CLIP_PLANE = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
 
 export function MilkyWay() {
   const texture = useTexture("/textures/milkyway.webp");
+  const { gl } = useThree();
 
-  // Configuration de la texture pour éviter les artefacts
-  texture.wrapS = THREE.RepeatWrapping;
-  texture.wrapT = THREE.RepeatWrapping;
-  texture.colorSpace = THREE.SRGBColorSpace;
+  // Configuration de la texture pour éviter les artefacts et la rendre bien nette
+  useMemo(() => {
+    texture.wrapS = THREE.RepeatWrapping;
+    texture.wrapT = THREE.RepeatWrapping;
+    texture.colorSpace = THREE.SRGBColorSpace;
+    texture.anisotropy = gl.capabilities.getMaxAnisotropy();
+    texture.minFilter = THREE.LinearMipmapLinearFilter;
+    texture.magFilter = THREE.LinearFilter;
+  }, [texture, gl]);
 
   const clippingPlanes = useMemo(() => [HORIZON_CLIP_PLANE], []);
 
-  const baseTimestamp = useSkyStore(s => s.baseTimestamp);
-  const currentLat = useSkyStore(s => s.currentLat);
+  const baseTimestamp = useSkyStore((s) => s.baseTimestamp);
+  const currentLat = useSkyStore((s) => s.currentLat);
 
   const baseRotationRef = useRef<THREE.Group>(null);
 
@@ -47,11 +54,11 @@ export function MilkyWay() {
       const [nx, ny, nz] = altAzToXYZ(currentLat, 0, 1);
       const ncpVector = new THREE.Vector3(nx, ny, nz).normalize();
 
-      // La Voie Lactée (qui n'est pas recalculée par le Python) doit s'aligner 
+      // La Voie Lactée (qui n'est pas recalculée par le Python) doit s'aligner
       // de manière absolue sur le temps courant renvoyé par le backend.
       baseRotationRef.current.setRotationFromAxisAngle(
         ncpVector,
-        THREE.MathUtils.degToRad(-gmst)
+        THREE.MathUtils.degToRad(-gmst),
       );
     }
   }, [baseTimestamp, currentLat]);

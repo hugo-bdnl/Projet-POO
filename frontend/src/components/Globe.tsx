@@ -1,4 +1,4 @@
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useMemo } from "react";
 import { useFrame } from "@react-three/fiber";
 import { useTexture } from "@react-three/drei";
 import * as THREE from "three";
@@ -16,12 +16,12 @@ export function Globe() {
 
   // Connexion au state manager
   // Constantes de temps et stores
-  const tsStr = useSkyStore(s => s.timestamp);
-  const selectedPlanet = useSkyStore(s => s.selectedPlanet) || "earth";
+  const tsStr = useSkyStore((s) => s.timestamp);
+  const selectedPlanet = useSkyStore((s) => s.selectedPlanet) || "earth";
   const { points, fetchPoints } = useObservationStore();
 
   const customUniformsRef = useRef({
-    uSunDirection: { value: new THREE.Vector3(1, 0, 0) }
+    uSunDirection: { value: new THREE.Vector3(1, 0, 0) },
   });
   const directionalLightRef = useRef<THREE.DirectionalLight>(null);
 
@@ -40,39 +40,58 @@ export function Globe() {
   ]);
 
   // Texture dynamique de la planète sélectionnée
-  const planetTexture = useTexture(planetMetadata?.textureGlobePath || "/textures/planets/8k/8k_earth_daymap.webp");
+  const planetTexture = useTexture(
+    planetMetadata?.textureGlobePath ||
+      "/textures/planets/8k/8k_earth_daymap.webp",
+  );
 
   // Anneaux si nécessaire (Saturne)
-  const saturnRingTexture = useTexture("/textures/planets/8k/8k_saturn_ring_alpha.webp");
+  const saturnRingTexture = useTexture(
+    "/textures/planets/8k/8k_saturn_ring_alpha.webp",
+  );
 
-  useFrame((_state) => {
+  // Pré-allocation pour éviter instanciation à chaque frame
+  const localSunDirectionRef = useRef(new THREE.Vector3());
+
+  // Les positions et rotations ne changent que si le temps (tsStr) ou la planète cible change
+  const { gmstDeg, sunDirectionGlobal } = useMemo(() => {
     const calculationDate = tsStr ? new Date(tsStr) : new Date();
+    const gmst = computeGMST(calculationDate);
+    const planets = computePlanetPositions(calculationDate, true); // skip orbits
 
+    // On extrait la position orbitale réelle de la planète regardée pour calculer la lumière
+    const fallbackPlanet = selectedPlanet === "sun" ? "earth" : selectedPlanet;
+    const planetPos =
+      planets.get(fallbackPlanet)?.position3D || new THREE.Vector3(1, 0, 0);
+
+    // Direction Planète -> Soleil : Vecteur inverse de la position orbitale
+    const sunDir = planetPos.clone().negate().normalize();
+
+    return { gmstDeg: gmst, sunDirectionGlobal: sunDir };
+  }, [tsStr, selectedPlanet]);
+
+  useFrame(() => {
     if (meshRef.current) {
-      // On applique la rotation temporelle exacte de la Terre (GMST) à toutes les planètes
-      // pour un comportement parfaitement prédictible, unifié et contrôlable via le TimeSlider.
-      const gmstDeg = computeGMST(calculationDate);
+      // Rotation de la texture du globe coordonnée au temps sidéral (GMT)
       meshRef.current.rotation.y = THREE.MathUtils.degToRad(gmstDeg);
     }
 
-    const planets = computePlanetPositions(calculationDate, true);
-    // On extrait la position orbitale réelle de la planète regardée pour calculer d'où vient SA lumière du soleil
-    const fallbackPlanet = selectedPlanet === "sun" ? "earth" : selectedPlanet;
-    const planetPos = planets.get(fallbackPlanet)?.position3D || new THREE.Vector3(1, 0, 0);
-    // Direction Planète -> Soleil : Vecteur inverse de la position orbitale
-    const sunDirectionGlobal = planetPos.clone().negate().normalize();
-
     if (directionalLightRef.current) {
-      // Pour une lumière directionnelle, la position définit la direction depuis laquelle la lumière vient (vers 0,0,0)
-      directionalLightRef.current.position.copy(sunDirectionGlobal).multiplyScalar(5);
+      // Place la source de lumière dans la direction d'où viennent les rayons
+      directionalLightRef.current.position
+        .copy(sunDirectionGlobal)
+        .multiplyScalar(5);
     }
 
     if (meshRef.current) {
-      // Crucial : Le terminateur (shader) est appliqué sur le mesh qui tourne (rotation.y).
-      // Il faut donc donner au shader la direction du soleil dans le référentiel *local* de la planète 
-      // pour que l'ombre reste fixe par rapport à la lumière globale pendant que la texture tourne sous l'ombre.
-      const localSunDirection = meshRef.current.worldToLocal(sunDirectionGlobal.clone()).normalize();
-      customUniformsRef.current.uSunDirection.value.copy(localSunDirection);
+      // Le terminateur Jour/Nuit doit connaître la direction de la lumière DANS le référentiel tournant du mesh.
+      // On utilise un useRef pour manipuler la copie sans "new THREE.Vector3()" à 60 FPS
+      localSunDirectionRef.current.copy(sunDirectionGlobal);
+      meshRef.current.worldToLocal(localSunDirectionRef.current).normalize();
+
+      customUniformsRef.current.uSunDirection.value.copy(
+        localSunDirectionRef.current,
+      );
     }
   });
 
@@ -82,13 +101,22 @@ export function Globe() {
       <directionalLight ref={directionalLightRef} intensity={2.5} />
 
       {/* Représentation visuelle du Soleil au loin */}
-      <mesh position={customUniformsRef.current.uSunDirection.value.clone().multiplyScalar(150)}>
+      <mesh
+        position={customUniformsRef.current.uSunDirection.value
+          .clone()
+          .multiplyScalar(150)}
+      >
         <sphereGeometry args={[5, 32, 32]} />
         <meshBasicMaterial color="#fffcf2" />
         {/* Glow du soleil (Aura) */}
         <mesh>
           <sphereGeometry args={[7, 32, 32]} />
-          <meshBasicMaterial color="#ffcc00" transparent opacity={0.3} blending={THREE.AdditiveBlending} />
+          <meshBasicMaterial
+            color="#ffcc00"
+            transparent
+            opacity={0.3}
+            blending={THREE.AdditiveBlending}
+          />
         </mesh>
       </mesh>
       {/* Pas de Stars ici car c'est géré globalement dans App.tsx */}
@@ -101,15 +129,24 @@ export function Globe() {
             map={planetTexture}
             normalMap={selectedPlanet === "earth" ? earthNormalMap : null}
             metalnessMap={selectedPlanet === "earth" ? earthSpecularMap : null}
-            roughness={selectedPlanet === "earth" || selectedPlanet === "venus" ? 0.6 : 0.8}
+            roughness={
+              selectedPlanet === "earth" || selectedPlanet === "venus"
+                ? 0.6
+                : 0.8
+            }
             metalness={selectedPlanet === "earth" ? 0.4 : 0.1}
             emissiveMap={selectedPlanet === "earth" ? earthEmissiveMap : null}
-            emissive={selectedPlanet === "earth" ? new THREE.Color(0xffffff) : new THREE.Color(0x000000)}
+            emissive={
+              selectedPlanet === "earth"
+                ? new THREE.Color(0xffffff)
+                : new THREE.Color(0x000000)
+            }
             emissiveIntensity={1.0}
             onBeforeCompile={(shader) => {
               if (selectedPlanet === "sun") return;
               applyDayNightTerminator(shader);
-              shader.uniforms.uSunDirection = customUniformsRef.current.uSunDirection;
+              shader.uniforms.uSunDirection =
+                customUniformsRef.current.uSunDirection;
             }}
           />
           {/* Anneaux de Saturne en mode Globe */}
@@ -126,16 +163,17 @@ export function Globe() {
           )}
 
           {/* 50 Points d'observation depuis l'API, uniquement pour la Terre */}
-          {selectedPlanet === "earth" && points.map((pt) => (
-            <LocationMarker
-              key={pt.id}
-              id={pt.id}
-              lat={pt.latitude}
-              lon={pt.longitude}
-              name={pt.name}
-              timezone={pt.timezone}
-            />
-          ))}
+          {selectedPlanet === "earth" &&
+            points.map((pt) => (
+              <LocationMarker
+                key={pt.id}
+                id={pt.id}
+                lat={pt.latitude}
+                lon={pt.longitude}
+                name={pt.name}
+                timezone={pt.timezone}
+              />
+            ))}
 
           {/* Tâche 7 : Effet Atmosphère (Glow) */}
           <mesh>

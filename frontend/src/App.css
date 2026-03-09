@@ -102,7 +102,7 @@ body {
 }
 
 .side-panel--globe-left.shifted {
-  transform: translateX(420px);
+  transform: translateX(420px) !important;
 }
 
 /* Scrollbar personnalisée */
@@ -205,6 +205,32 @@ body {
 
 .action-button:active {
   transform: translateY(1px);
+}
+
+/* Boutons de l'interface en superposition (HUD) */
+.hud-button {
+  background: rgba(10, 10, 20, 0.8);
+  padding: 8px 16px;
+  border-radius: 20px;
+  border: 1px solid rgba(0, 240, 255, 0.3);
+  color: #00f0ff;
+  font-family: monospace;
+  font-size: 0.9rem;
+  font-weight: bold;
+  box-shadow: 0 0 15px rgba(0, 240, 255, 0.1);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.hud-button:hover {
+  background: rgba(0, 240, 255, 0.1);
+  box-shadow: 0 0 20px rgba(0, 240, 255, 0.3);
+}
+
+.hud-button--active {
+  background: rgba(0, 240, 255, 0.15);
+  border: 1px solid rgba(0, 240, 255, 0.7);
+  box-shadow: 0 0 18px rgba(0, 240, 255, 0.25);
 }
 
 /* Toast Messages */

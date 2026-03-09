@@ -8,7 +8,6 @@ export function SidePanel() {
   const { selectedPoint, setSelectedPoint } = useObservationStore();
   const {
     viewMode,
-    setViewMode,
     fetchVisibleStars,
     loadingStars,
     selectedStar,
@@ -16,6 +15,8 @@ export function SidePanel() {
     stars,
     timestamp,
     setCameraTarget,
+    selectedPlanet,
+    transitionToMode,
   } = useSkyStore();
 
   const {
@@ -71,7 +72,7 @@ export function SidePanel() {
     if (selectedPoint) {
       setCameraTarget(null);
       clearSelection(); // Retirer la constellation pour restaurer la luminosité
-      setViewMode("sky");
+      transitionToMode("sky");
       fetchVisibleStars(
         selectedPoint.latitude,
         selectedPoint.longitude,
@@ -81,7 +82,7 @@ export function SidePanel() {
   };
 
   const handleReturnToGlobe = () => {
-    setViewMode("globe");
+    transitionToMode("globe");
     setSelectedStar(null);
     setCameraTarget(null);
     clearSelection();
@@ -92,18 +93,34 @@ export function SidePanel() {
 
   // ... (Recherche céleste déplacée vers ConstellationSidebar)
 
-  // ── Rendu ISS ──────────────────────────────────────────────────────────────
-  if (viewMode === "globe" && selectedISS && issInfo) {
+  // ── Hide SidePanel on other planets ────────────────────────────────────────
+  if (viewMode === "globe" && selectedPlanet && selectedPlanet !== "earth") {
+    return null;
+  }
+
+  // ── Rendu ISS Info component block ──────────────────────────────────────────
+  const ISSInfoBlock = () => {
+    if (!selectedISS || !issInfo) return null;
     return (
-      <div className="side-panel">
+      <div
+        style={{
+          marginTop: "1.5rem",
+          borderTop: "1px solid rgba(255,255,255,0.1)",
+          paddingTop: "1.5rem",
+          position: "relative",
+        }}
+      >
         <button
           className="close-button"
           onClick={clearISSSelection}
           title="Fermer"
+          style={{ top: "1.2rem", right: "0" }}
         >
           ✕
         </button>
-        <h2>🛸 Station Spatiale ISS</h2>
+        <h2 style={{ fontSize: "1.1rem", marginBottom: "1rem" }}>
+          🛸 Station Spatiale ISS
+        </h2>
 
         <div className="info-group">
           <span className="label">Latitude</span>
@@ -157,43 +174,17 @@ export function SidePanel() {
         </div>
       </div>
     );
-  }
+  };
 
   if (viewMode === "system") {
-    return (
-      <div className="side-panel">
-        <h2>☀️ Système Solaire</h2>
-        <p style={{ color: "grey", fontSize: "0.9em", marginTop: "10px" }}>
-          Vous observez notre système stellaire en temps réel. L'échelle des
-          planètes et des orbites est ajustée pour une meilleure visualisation.
-        </p>
-        <button
-          className="action-button"
-          onClick={() => setViewMode("globe")}
-          style={{
-            marginTop: "30px",
-            width: "100%",
-            padding: "12px",
-            backgroundColor: "#22ccff",
-            color: "#000",
-            fontWeight: "bold",
-            border: "none",
-            borderRadius: "6px",
-            cursor: "pointer",
-          }}
-        >
-          🌍 Retourner sur Terre
-        </button>
-      </div>
-    );
+    return null; // Suppression totale du panneau "Système Solaire" / "Retourner sur Terre" comme demandé
   }
 
   const isGlobeLeft = viewMode === "globe";
   const isShifted =
     isGlobeLeft &&
     isConstellationSidebarOpen &&
-    (!useSkyStore.getState().selectedPlanet ||
-      useSkyStore.getState().selectedPlanet === "earth");
+    (!selectedPlanet || selectedPlanet === "earth");
 
   return (
     <div
@@ -242,26 +233,29 @@ export function SidePanel() {
             </>
           )}
 
-          {!selectedPoint && (
-            <>
-              <h2>Terre</h2>
-              <p style={{ color: "grey", fontSize: "0.9em" }}>
-                Cliquez un point sur le globe pour explorer ce lieu.
-              </p>
-
-              {loadingDetail && (
-                <p
-                  style={{
-                    fontSize: "0.8em",
-                    color: "#bb88f6",
-                    marginTop: "15px",
-                  }}
-                >
-                  Calcul de l'orbite optimale...
+          {!selectedPoint &&
+            (!selectedPlanet || selectedPlanet === "earth") && (
+              <>
+                <h2>Terre</h2>
+                <p style={{ color: "grey", fontSize: "0.9em" }}>
+                  Cliquez un point sur le globe pour explorer ce lieu.
                 </p>
-              )}
-            </>
-          )}
+
+                {loadingDetail && (
+                  <p
+                    style={{
+                      fontSize: "0.8em",
+                      color: "#bb88f6",
+                      marginTop: "15px",
+                    }}
+                  >
+                    Calcul de l'orbite optimale...
+                  </p>
+                )}
+              </>
+            )}
+
+          <ISSInfoBlock />
         </>
       ) : (
         <>

@@ -1,60 +1,78 @@
 import { Html, useProgress } from "@react-three/drei";
+import "./TransitionScreen.css";
+
+import { useEffect, useState } from "react";
+import { useSkyStore } from "../stores/useSkyStore";
 
 function LoaderUI() {
-  const { progress } = useProgress();
+  const { active, progress } = useProgress();
+  const isTransitioning = useSkyStore((s) => s.isTransitioning);
+
+  // Affiche l'écran si R3F charge OU si on force une transition
+  const visible = active || isTransitioning;
+  const [displayProgress, setDisplayProgress] = useState(0);
+
+  // Suit la progression réelle de ThreeJS
+  useEffect(() => {
+    if (active) {
+      setDisplayProgress((p) => Math.max(p, progress));
+    }
+  }, [active, progress]);
+
+  // Si on est en transition forcée (textures en cache),
+  // on fait grimper la barre à 100% de manière fluide pendant la 1.5 seconde.
+  useEffect(() => {
+    if (visible && !active) {
+      const interval = setInterval(() => {
+        setDisplayProgress((p) => Math.min(p + 4, 100)); // ~25 ticks pour arriver à 100% sur 1.5s
+      }, 50);
+      return () => clearInterval(interval);
+    }
+  }, [visible, active]);
+
+  if (!visible) {
+    if (displayProgress !== 0) setDisplayProgress(0); // Reset for next time
+    return null;
+  }
 
   return (
     <div
+      className="transition-overlay"
       style={{
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-        background: "rgba(10, 10, 20, 0.9)",
-        padding: "2rem",
-        borderRadius: "15px",
-        border: "1px solid rgba(0, 240, 255, 0.3)",
-        boxShadow: "0 0 30px rgba(0, 240, 255, 0.1)",
-        backdropFilter: "blur(10px)",
-        color: "#00f0ff",
-        fontFamily: "monospace",
-        width: "300px",
+        position: "absolute",
+        top: "50%",
+        left: "50%",
+        transform: "translate(-50%, -50%)",
+        width: "100vw",
+        height: "100vh",
+        zIndex: 9999,
+        pointerEvents: "all",
       }}
     >
-      <div
-        style={{
-          fontSize: "1.2rem",
-          fontWeight: "bold",
-          marginBottom: "1rem",
-        }}
-      >
-        Chargement Spatial
-      </div>
+      <div className="scanlines"></div>
 
-      {/* Barre de progression externe */}
-      <div
-        style={{
-          width: "100%",
-          height: "10px",
-          background: "rgba(255, 255, 255, 0.1)",
-          borderRadius: "5px",
-          overflow: "hidden",
-          marginBottom: "0.5rem",
-        }}
-      >
-        {/* Remplissage de la barre */}
-        <div
-          style={{
-            height: "100%",
-            width: `${progress}%`,
-            background: "linear-gradient(90deg, #00f0ff, #0066ff)",
-            transition: "width 0.2s ease",
-          }}
-        />
-      </div>
+      <div className="transition-content">
+        <div className="spinner-container">
+          <div className="futuristic-spinner"></div>
+          <div className="spinner-core"></div>
+        </div>
 
-      <div style={{ fontSize: "0.9rem", color: "rgba(255, 255, 255, 0.7)" }}>
-        {progress.toFixed(0)}%
+        {/* 🛠️ TEXTE PERSONNALISABLE ICI : Titre principal du chargement */}
+        <h2 className="transition-title">
+          Récupération du flux vidéo en cours...
+        </h2>
+
+        <div className="progress-bar-container">
+          <div
+            className="progress-bar-fill"
+            style={{ width: `${displayProgress}%` }}
+          ></div>
+        </div>
+
+        {/* 🛠️ TEXTE PERSONNALISABLE ICI : Sous-titre avec le pourcentage */}
+        <div className="progress-text">
+          {displayProgress.toFixed(0)}% Module XKT-500
+        </div>
       </div>
     </div>
   );
@@ -62,7 +80,7 @@ function LoaderUI() {
 
 export function Loader3D() {
   return (
-    <Html center prepend>
+    <Html center prepend zIndexRange={[100, 0]}>
       <LoaderUI />
     </Html>
   );

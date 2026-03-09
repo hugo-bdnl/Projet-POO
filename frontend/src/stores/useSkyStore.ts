@@ -45,8 +45,10 @@ interface SkyState {
   showAzAltGrid: boolean;
   toggleAzAltGrid: () => void;
   isTransitioning: boolean;
-  startTransitionToGlobe: (planet: import("../types/planets").PlanetId) => void;
-  endTransitionToGlobe: () => void;
+  transitionToMode: (
+    mode: ViewMode,
+    planet?: import("../types/planets").PlanetId | null,
+  ) => void;
 }
 
 export const useSkyStore = create<SkyState>((set, get) => ({
@@ -62,6 +64,7 @@ export const useSkyStore = create<SkyState>((set, get) => ({
   error: null,
   currentLat: null,
   currentLon: null,
+  isTransitioning: false,
 
   setViewMode: (mode) => set({ viewMode: mode }),
   setTimestamp: (iso) => set({ timestamp: iso }),
@@ -159,9 +162,18 @@ export const useSkyStore = create<SkyState>((set, get) => ({
   showAzAltGrid: false,
   toggleAzAltGrid: () => set((s) => ({ showAzAltGrid: !s.showAzAltGrid })),
 
-  isTransitioning: false,
-  startTransitionToGlobe: (planet) =>
-    set({ isTransitioning: true, selectedPlanet: planet }),
-  endTransitionToGlobe: () =>
-    set({ isTransitioning: false, viewMode: "globe" }),
+  transitionToMode: (mode, planet) => {
+    // On force l'état isTransitioning pour afficher le Loader quoi qu'il arrive.
+    // On change IMMÉDIATEMENT la destination pour commencer à charger R3F en parallèle !
+    set({ isTransitioning: true, viewMode: mode });
+    if (planet !== undefined) {
+      set({ selectedPlanet: planet });
+    }
+
+    // On ferme la transition forcée minimale au bout de 1.5s.
+    // Si Three.js charge encore, il prendra le relai avec `active`.
+    setTimeout(() => {
+      set({ isTransitioning: false });
+    }, 1500);
+  },
 }));

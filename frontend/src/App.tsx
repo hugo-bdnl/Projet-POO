@@ -1,6 +1,6 @@
 import { Suspense, useEffect, useState, useRef } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
-import { OrbitControls, Stars } from "@react-three/drei";
+import { OrbitControls, Stars, useTexture } from "@react-three/drei";
 import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
 import { Globe } from "./components/Globe";
 import { SidePanel } from "./components/SidePanel";
@@ -18,7 +18,6 @@ import { Loader3D } from "./components/Loader3D";
 import { useSkyStore } from "./stores/useSkyStore";
 import { useConstellationStore } from "./stores/useConstellationStore";
 import { useObservationStore } from "./stores/useObservationStore";
-import { TransitionScreen } from "./components/TransitionScreen";
 import * as THREE from "three";
 import "./App.css";
 
@@ -97,6 +96,24 @@ function CameraController({
   return null;
 }
 
+function StaticStarBackground() {
+  const texture = useTexture("/textures/8k_stars.webp");
+  // Assurer des couleurs correctes
+  texture.colorSpace = THREE.SRGBColorSpace;
+
+  return (
+    <mesh renderOrder={-5}>
+      <sphereGeometry args={[5000, 32, 32]} />
+      <meshBasicMaterial
+        map={texture}
+        side={THREE.BackSide}
+        depthWrite={false}
+        toneMapped={false}
+      />
+    </mesh>
+  );
+}
+
 function App() {
   const {
     viewMode,
@@ -160,23 +177,11 @@ function App() {
           {/* Bouton Retour au Globe */}
           <button
             onClick={() => {
-              useSkyStore.getState().setViewMode("globe");
+              useSkyStore.getState().transitionToMode("globe");
               useSkyStore.getState().setSelectedStar(null);
               useSkyStore.getState().setCameraTarget(null);
             }}
-            style={{
-              background: "rgba(10, 10, 20, 0.8)",
-              padding: "8px 16px",
-              borderRadius: "20px",
-              border: "1px solid rgba(0, 240, 255, 0.3)",
-              color: "#00f0ff",
-              fontFamily: "monospace",
-              fontSize: "0.9rem",
-              fontWeight: "bold",
-              boxShadow: "0 0 15px rgba(0, 240, 255, 0.1)",
-              cursor: "pointer",
-              transition: "all 0.2s ease",
-            }}
+            className="hud-button"
           >
             ← Globe
           </button>
@@ -189,23 +194,8 @@ function App() {
                 ? "Masquer la grille Az/Alt"
                 : "Afficher la grille Az/Alt"
             }
-            style={{
-              background: showAzAltGrid
-                ? "rgba(0, 240, 255, 0.15)"
-                : "rgba(10, 10, 20, 0.8)",
-              padding: "8px 16px",
-              borderRadius: "20px",
-              border: `1px solid rgba(0, 240, 255, ${showAzAltGrid ? "0.7" : "0.3"})`,
-              color: "#00f0ff",
-              fontFamily: "monospace",
-              fontSize: "0.85rem",
-              fontWeight: "bold",
-              boxShadow: showAzAltGrid
-                ? "0 0 18px rgba(0, 240, 255, 0.25)"
-                : "0 0 15px rgba(0, 240, 255, 0.1)",
-              cursor: "pointer",
-              transition: "all 0.2s ease",
-            }}
+            className={`hud-button ${showAzAltGrid ? "hud-button--active" : ""}`}
+            style={{ fontSize: "0.85rem" }}
           >
             {showAzAltGrid ? "⊞ GRILLE ON" : "⊞ GRILLE"}
           </button>
@@ -214,9 +204,6 @@ function App() {
 
       {/* Toast Notification */}
       {toastMessage && <div className="toast-container">⚠️ {toastMessage}</div>}
-
-      {/* Ecran de transition futuriste */}
-      <TransitionScreen />
 
       {/* Panneau latéral HTML UI - Tâches 2 & 6 */}
       <SidePanel />
@@ -227,7 +214,7 @@ function App() {
       <TimeSlider />
 
       <Canvas
-        camera={{ position: [0, 0, 3], fov: 50 }}
+        camera={{ position: [0, 0, 3], fov: 50, far: 10000 }}
         dpr={[1, 1.5]}
         gl={{ localClippingEnabled: true }}
         raycaster={{
@@ -237,18 +224,24 @@ function App() {
         <color attach="background" args={["#000000"]} />
         <ambientLight intensity={0.2} />
 
-        {/* Ciel étoilé permanent pour éviter les décalages de fond */}
-        <Stars
-          radius={500}
-          depth={500}
-          count={7000}
-          factor={7}
-          saturation={0}
-          fade
-          speed={1}
-        />
+        {/* Ciel étoilé permanent pour éviter les décalages de fond EN MODE SKY */}
+        {viewMode === "sky" && (
+          <Stars
+            radius={500}
+            depth={500}
+            count={7000}
+            factor={7}
+            saturation={0}
+            fade
+            speed={1}
+          />
+        )}
 
-        <Suspense fallback={<Loader3D />}>
+        <Loader3D />
+
+        <Suspense fallback={null}>
+          {viewMode !== "sky" && <StaticStarBackground />}
+
           {viewMode === "system" && <SolarSystem />}
           {viewMode === "globe" && <Globe />}
           {viewMode === "sky" && <NightSky />}
