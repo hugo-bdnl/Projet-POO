@@ -14,6 +14,7 @@ interface SkyState {
   loadingStars: boolean;
   hoveredStar: VisibleStar | null;
   selectedStar: VisibleStar | null;
+  selectedPlanet: import("../types/planets").PlanetId | null;
   error: string | null;
 
   // Coordonnées courantes pour pouvoir fetcher les extras
@@ -36,6 +37,7 @@ interface SkyState {
   clearConstellationExtras: () => void;
   setHoveredStar: (star: VisibleStar | null) => void;
   setSelectedStar: (star: VisibleStar | null) => void;
+  setSelectedPlanet: (planet: import("../types/planets").PlanetId | null) => void;
   cameraTarget: [number, number, number] | null;
   setCameraTarget: (target: [number, number, number] | null) => void;
   showAzAltGrid: boolean;
@@ -51,6 +53,7 @@ export const useSkyStore = create<SkyState>((set, get) => ({
   loadingStars: false,
   hoveredStar: null,
   selectedStar: null,
+  selectedPlanet: null,
   error: null,
   currentLat: null,
   currentLon: null,
@@ -143,6 +146,7 @@ export const useSkyStore = create<SkyState>((set, get) => ({
 
   setHoveredStar: (star) => set({ hoveredStar: star }),
   setSelectedStar: (star) => set({ selectedStar: star }),
+  setSelectedPlanet: (planet) => set({ selectedPlanet: planet }),
 
   cameraTarget: null,
   setCameraTarget: (target) => set({ cameraTarget: target }),

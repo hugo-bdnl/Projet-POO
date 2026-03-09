@@ -1,9 +1,10 @@
 import * as THREE from "three";
 import { useRef } from "react";
 import { useFrame } from "@react-three/fiber";
-import { useTexture, Stars, Line } from "@react-three/drei";
+import { useTexture, Line } from "@react-three/drei";
 import { useSkyStore } from "../stores/useSkyStore";
 import { computePlanetPositions } from "../utils/planetaryEphemeris";
+import { PLANETS_METADATA } from "../types/planets";
 
 /**
  * Composant principal de la vue Système Solaire.
@@ -24,6 +25,8 @@ export function SolarSystem() {
   const sunPos = planetPositions.get("sun")!;
   const sunMaterialRef = useRef<THREE.MeshBasicMaterial>(null);
   const sunLightRef = useRef<THREE.PointLight>(null);
+
+  const { setSelectedPlanet } = useSkyStore();
 
   useFrame((state) => {
     if (sunMaterialRef.current && sunLightRef.current) {
@@ -53,16 +56,6 @@ export function SolarSystem() {
 
   return (
     <group>
-      {/* 0. Fond d'étoiles statique profond pour le vide spatial */}
-      <Stars
-        radius={150}
-        depth={50}
-        count={3000}
-        factor={6}
-        saturation={0}
-        fade
-        speed={1}
-      />
       {/* 1. Lumière centrale issue du soleil */}
       <pointLight
         ref={sunLightRef}
@@ -75,9 +68,23 @@ export function SolarSystem() {
       <ambientLight intensity={0.4} />{" "}
       {/* Plus fort pour "déboucher" les zones d'ombres des textures */}
       {/* 2. Le Soleil */}
-      <mesh position={sunPos.position3D}>
+      <mesh
+        position={sunPos.position3D}
+        onClick={(e) => {
+          e.stopPropagation();
+          setSelectedPlanet("sun");
+        }}
+        onPointerOver={(e) => {
+          e.stopPropagation();
+          document.body.style.cursor = "pointer";
+          useTexture.preload(PLANETS_METADATA.sun.textureGlobePath);
+        }}
+        onPointerOut={() => {
+          document.body.style.cursor = "auto";
+        }}
+      >
         {/* Soleil imposant pour rester indéniablement le centre de masse masssif vis-à-vis des géantes */}
-        <sphereGeometry args={[12, 64, 64]} />
+        <sphereGeometry args={[PLANETS_METADATA.sun.visualSize, 64, 64]} />
         <meshBasicMaterial ref={sunMaterialRef} map={sunTexture} />
       </mesh>
       {/* 3. Les Planètes */}
@@ -98,23 +105,22 @@ export function SolarSystem() {
             )}
 
             {/* Corps de la planète */}
-            <mesh position={p.position3D}>
-              {/* Planètes beaucoup plus grandes pour être bien visibles de loin (Option 2 acceptée) */}
-              <sphereGeometry
-                args={[
-                  p.id === "jupiter" || p.id === "saturn"
-                    ? 5.0
-                    : p.id === "uranus" || p.id === "neptune"
-                      ? 3.5
-                      : p.id === "earth" || p.id === "venus"
-                        ? 1.8
-                        : p.id === "mars"
-                          ? 1.2
-                          : 0.8, // Mercure
-                  64,
-                  64,
-                ]}
-              />
+            <mesh
+              position={p.position3D}
+              onClick={(e) => {
+                e.stopPropagation();
+                setSelectedPlanet(p.id);
+              }}
+              onPointerOver={(e) => {
+                e.stopPropagation();
+                document.body.style.cursor = "pointer";
+                useTexture.preload(PLANETS_METADATA[p.id].textureGlobePath);
+              }}
+              onPointerOut={() => {
+                document.body.style.cursor = "auto";
+              }}
+            >
+              <sphereGeometry args={[PLANETS_METADATA[p.id].visualSize, 64, 64]} />
               <meshStandardMaterial
                 map={textures[p.id]}
                 roughness={p.id === "earth" || p.id === "venus" ? 0.4 : 0.7}

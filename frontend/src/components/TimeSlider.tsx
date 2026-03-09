@@ -95,8 +95,6 @@ export const TimeSlider = () => {
     }
   };
 
-  if (viewMode === "system") return null;
-
   return (
     <div
       style={{
@@ -159,23 +157,25 @@ export const TimeSlider = () => {
         </button>
       </div>
 
-      <div style={{ width: "100%", display: "flex", alignItems: "center", gap: "10px" }}>
-        <span style={{ fontSize: "0.8em", color: "#666" }}>0h</span>
-        <input
-          type="range"
-          min="0"
-          max="23.99"
-          step="0.1"
-          value={hourRatio}
-          onChange={handleSliderChange}
-          style={{
-            flex: 1,
-            cursor: "pointer",
-            accentColor: "#00f0ff",
-          }}
-        />
-        <span style={{ fontSize: "0.8em", color: "#666" }}>24h</span>
-      </div>
+      {viewMode !== "system" && (
+        <div style={{ width: "100%", display: "flex", alignItems: "center", gap: "10px" }}>
+          <span style={{ fontSize: "0.8em", color: "#666" }}>0h</span>
+          <input
+            type="range"
+            min="0"
+            max="23.99"
+            step="0.1"
+            value={hourRatio}
+            onChange={handleSliderChange}
+            style={{
+              flex: 1,
+              cursor: "pointer",
+              accentColor: "#00f0ff",
+            }}
+          />
+          <span style={{ fontSize: "0.8em", color: "#666" }}>24h</span>
+        </div>
+      )}
     </div>
   );
 };

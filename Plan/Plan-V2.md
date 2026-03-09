@@ -368,9 +368,9 @@ Le démarrage de l'application en mode "Système Solaire" requiert le chargement
    - Passer `dayTexture` (Blue Marble) + `nightTexture` (Black Marble) comme uniforms
    - Passer `sunDirection` depuis le store (mis à jour 1×/s)
    - Conserver : atmosphère shader existant (superposition additive)
-3. Tester le terminateur à différentes dates/heures via le slider temporel
-4. Ajuster la pénombre (zone crépuscule, largeur ~15°)
-5. S'assurer que les normal maps (relief) fonctionnent toujours (à intégrer dans le ShaderMaterial)
+3. [x] Tester le terminateur à différentes dates/heures via le slider temporel
+4. [x] Ajuster la pénombre (zone crépuscule, largeur ~15°)
+5. [x] S'assurer que les normal maps (relief) fonctionnent toujours (à intégrer dans le ShaderMaterial)
 
 **Livrable** :
 
@@ -384,14 +384,11 @@ Le démarrage de l'application en mode "Système Solaire" requiert le chargement
 
 **Tâches** :
 
-1. Créer `PlanetDetailView.tsx` : globe 3D générique paramétré par `PlanetId`
-   - Textures spécifiques (diffuse, normal si dispo, clouds si dispo)
-   - OrbitControls locaux
-   - Atmosphère adaptée (Mars : fine rouge, Vénus : épaisse orange, ...)
-2. Gérer la transition caméra : animation spring depuis vue système solaire → face planète
-3. Panneau InfoCard : données planète (distance, masse, lune(s), température...)
-4. Bouton "Explorer" visible en hover sur une planète
-5. Bouton "Retour au Système Solaire" dans la vue détaillée
+1. [x] Créer la logique `selectedPlanet` et stocker ses propriétés physiques.
+2. [x] Gérer la transition caméra : animation spring depuis vue système solaire → face planète
+3. [x] Créer Panneau InfoCard : données planète (distance, masse, lune(s), température...)
+4. [x] Ajouter logique interactive (curseur pointeur/hover + onClick)
+5. [x] Ajouter Bouton "Retour au Système Solaire" dans la vue détaillée
 
 **Livrable** :
 
@@ -499,6 +496,25 @@ uranus.webp, neptune.webp
 
 - **Migration PostgreSQL** : script d'import à préparer (Semaine V2-0) au lieu de sqlite.
 - Positions : 100% frontend.
+
+---
+
+### SEMAINE V2-7 : AUDIT DE PERFORMANCES ET OPTIMISATIONS
+
+**Objectif** : Fiabiliser et optimiser la version V2 pour éviter la surcharge processeur (CPU), réseau et vidéo (VRAM), garantissant une compatibilité avec les mobiles et PC modestes.
+
+**Tâches identifiées suite à l'audit du mode Globe Unifié :**
+
+1. **[CPU] Optimisation de l'Éphéméride** : 
+   - *Problème :* `computePlanetPositions` (théorie VSOP87B) est appelé 60 fois par seconde (`useFrame`) dans le `Globe.tsx` pour tous les astres de l'univers, alors que le temps n'est modifié intentionnellement qu'avec le TimeSlider.
+   - *Solution :* Mettre en cache (memoize) le vecteur `sunDirectionGlobal`. Il ne doit être recalculé uniquement que lorsque `tsStr` (TimeSlider) change, ou au grand maximum avec un limiteur de FPS (throttle).
+2. **[Réseau/Mémoire] Temporisation du prechargement dynamique** :
+   - *Problème :* Le `onPointerOver` déclenche le téléchargement (`useTexture.preload()`) instantané de la map 4K ou 8K. Le survol rapide du système solaire par l'utilisateur télécharge inutilement 50-100 Mo de textures.
+   - *Solution :* Assigner un `setTimeout` (~300 à 400ms) au `onPointerOver` qui se cancelle via `onPointerOut`. Ainsi, seule la volonté de zoomer vers la planète déclenche le téléchargement en avance.
+3. **[WebGL] Recompilation du Shader "DayNight"** :
+   - *Problème :* L'implémentation actuelle par `onBeforeCompile` sur le `meshStandardMaterial` de Three.js provoque une micro-saccade vidéo très brève à l'initialisation du composant Globe (Le GPU doit recompiler).
+   - *Solution :* Migrer si nécessaire vers `CustomShaderMaterial` (`drei/CSM`) si les tests révèlent une nuisance visible (hiccup) sur des GPU modestes, car CSM gère mieux la compilation asynchrone et les pools de cache.
+
 
 ---
 

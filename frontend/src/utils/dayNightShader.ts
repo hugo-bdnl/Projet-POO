@@ -52,18 +52,24 @@ export function applyDayNightTerminator(shader: any) {
     float sunDot = dot(normalize(vWorldNormalTerminator), normalize(uSunDirection));
     
     // Zone de pénombre douce (smoothstep) autour du crépuscule
-    float dayIntensity = smoothstep(-0.15, 0.15, sunDot);
+    float dayIntensity = smoothstep(-0.05, 0.2, sunDot);
     
     // Nuit: l'inverse du jour
     float nightIntensity = 1.0 - dayIntensity;
     
     // 1. Atténuation de la texture de base (Jour) du côté sombre pour 
     // l'empêcher d'être éclairée par l'ambientLight.
-    // On conserve un tout petit peu de visibilité au lieu de 0.0 (ex: 0.02)
-    diffuseColor.rgb *= (dayIntensity + 0.02);
+    // On conserve un tout petit peu de visibilité au lieu de 0.0 (ex: 0.005)
+    diffuseColor.rgb *= (dayIntensity + 0.005);
     
     // 2. Apparition des lumières des villes (Émissive) uniquement la nuit
     // L'emissive map est en fait la night map dans notre cas.
+    // Filtrage Luma ("Brightness") pour forcer les océans bleus nuit à devenir noirs
+    float luma = dot(totalEmissiveRadiance, vec3(0.299, 0.587, 0.114));
+    if (luma < 0.3) {
+       totalEmissiveRadiance = vec3(0.0);
+    }
+
     totalEmissiveRadiance *= nightIntensity;
     `
     );
