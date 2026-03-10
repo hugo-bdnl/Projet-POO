@@ -46,12 +46,6 @@ export const NightSky = () => {
   const materialRef = useRef<THREE.ShaderMaterial>(null);
   const skyRotationGroup = useRef<THREE.Group>(null);
 
-  // Pré-allocations pour le useFrame (optimisation Garbage Collector)
-  const ncpVectorRef = useRef(new THREE.Vector3());
-  const resetEulerRef = useRef(new THREE.Euler(0, 0, 0));
-  const cachedBaseTimeStrRef = useRef<string | null>(null);
-  const cachedBaseGmstRef = useRef<number>(0);
-
   // Toutes les étoiles à afficher : normales + extras du pattern
   const allStars = useMemo(
     () => [...stars, ...constellationExtraStars],
@@ -122,7 +116,7 @@ export const NightSky = () => {
   }, [allStars, constellationHipIds]);
 
   // Animation shader : scintillement des étoiles + transition highlight constellation
-  useFrame((_, delta) => {
+  useFrame((_state, delta) => {
     if (materialRef.current) {
       materialRef.current.uniforms.uTime.value += delta;
       // Smooth transition du highlight
@@ -138,30 +132,21 @@ export const NightSky = () => {
       const currentTimeStr = state.timestamp;
 
       if (rawCurrentLat !== null && baseTimeStr) {
-        // Mise en cache du calcul complexe de la base date si elle n'a pas changé
-        if (cachedBaseTimeStrRef.current !== baseTimeStr) {
-          cachedBaseTimeStrRef.current = baseTimeStr;
-          cachedBaseGmstRef.current = computeGMST(new Date(baseTimeStr));
-        }
-
         // La rotation de la voûte céleste se fait autour de l'Axe Pôlaire (Pôle Nord Céleste).
+        // Le PNC se trouve toujours vers le Nord (Azimut 0) à une hauteur (Altitude) égale à la latitude de l'observateur.
         const [nx, ny, nz] = altAzToXYZ(rawCurrentLat, 0, 1);
-        ncpVectorRef.current.set(nx, ny, nz).normalize();
+        const ncpVector = new THREE.Vector3(nx, ny, nz).normalize();
 
-        const calculationDate = currentTimeStr
-          ? new Date(currentTimeStr)
-          : new Date();
-        const currentGmst = computeGMST(calculationDate);
-        const deltaGmst = currentGmst - cachedBaseGmstRef.current;
+        const baseDate = new Date(baseTimeStr);
+        const calculationDate = currentTimeStr ? new Date(currentTimeStr) : new Date();
+
+        const deltaGmst = computeGMST(calculationDate) - computeGMST(baseDate);
 
         // La Terre tourne vers l'Est (+), donc la voûte céleste nous donne l'impression de tourner vers l'Ouest (-)
-        skyRotationGroup.current.setRotationFromAxisAngle(
-          ncpVectorRef.current,
-          THREE.MathUtils.degToRad(-deltaGmst),
-        );
+        skyRotationGroup.current.setRotationFromAxisAngle(ncpVector, THREE.MathUtils.degToRad(-deltaGmst));
       } else {
         // Reset
-        skyRotationGroup.current.setRotationFromEuler(resetEulerRef.current);
+        skyRotationGroup.current.setRotationFromEuler(new THREE.Euler(0, 0, 0));
       }
     }
   });
@@ -213,10 +198,7 @@ export const NightSky = () => {
           }}
         >
           <bufferGeometry>
-            <bufferAttribute
-              attach="attributes-position"
-              args={[positions, 3]}
-            />
+            <bufferAttribute attach="attributes-position" args={[positions, 3]} />
             <bufferAttribute attach="attributes-color" args={[colors, 3]} />
             <bufferAttribute attach="attributes-size" args={[sizes, 1]} />
             <bufferAttribute
