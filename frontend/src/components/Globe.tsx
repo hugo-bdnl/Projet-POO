@@ -6,7 +6,11 @@ import { LocationMarker } from "./LocationMarker";
 import { useObservationStore } from "../stores/useObservationStore";
 import { useSkyStore } from "../stores/useSkyStore";
 import { computePlanetPositions } from "../utils/planetaryEphemeris";
-import { applyDayNightTerminator } from "../utils/dayNightShader";
+import {
+  dayNightVertexShader,
+  dayNightFragmentShader,
+} from "../utils/dayNightShader";
+import CustomShaderMaterial from "three-custom-shader-material";
 import { computeGMST } from "../utils/skyCoords";
 import { ISS } from "./ISS";
 import { PLANETS_METADATA } from "../types/planets";
@@ -100,55 +104,61 @@ export function Globe() {
       {/* Lumière directionnelle principale (Soleil) */}
       <directionalLight ref={directionalLightRef} intensity={2.5} />
 
-      {/* Représentation visuelle du Soleil au loin */}
-      <mesh
-        position={customUniformsRef.current.uSunDirection.value
-          .clone()
-          .multiplyScalar(150)}
-      >
-        <sphereGeometry args={[5, 32, 32]} />
-        <meshBasicMaterial color="#fffcf2" />
-        {/* Glow du soleil (Aura) */}
-        <mesh>
-          <sphereGeometry args={[7, 32, 32]} />
-          <meshBasicMaterial
-            color="#ffcc00"
-            transparent
-            opacity={0.3}
-            blending={THREE.AdditiveBlending}
-          />
+      {/* Représentation visuelle du Soleil au loin, caché si on est déjà sur le Soleil */}
+      {selectedPlanet !== "sun" && (
+        <mesh
+          position={customUniformsRef.current.uSunDirection.value
+            .clone()
+            .multiplyScalar(150)}
+        >
+          <sphereGeometry args={[5, 32, 32]} />
+          <meshBasicMaterial color="#fffcf2" />
+          {/* Glow du soleil (Aura) */}
+          <mesh>
+            <sphereGeometry args={[7, 32, 32]} />
+            <meshBasicMaterial
+              color="#ffcc00"
+              transparent
+              opacity={0.3}
+              blending={THREE.AdditiveBlending}
+            />
+          </mesh>
         </mesh>
-      </mesh>
+      )}
       {/* Pas de Stars ici car c'est géré globalement dans App.tsx */}
 
       <group scale={planetMetadata?.visualSize || 1}>
         <mesh ref={meshRef}>
           {/* Sphère avec segments équilibrés : 32x32 est imperceptible vs 64x64 mais 4x moins lourd */}
           <sphereGeometry args={[1, 32, 32]} />
-          <meshStandardMaterial
-            map={planetTexture}
-            normalMap={selectedPlanet === "earth" ? earthNormalMap : null}
-            metalnessMap={selectedPlanet === "earth" ? earthSpecularMap : null}
-            roughness={
-              selectedPlanet === "earth" || selectedPlanet === "venus"
-                ? 0.6
-                : 0.8
-            }
-            metalness={selectedPlanet === "earth" ? 0.4 : 0.1}
-            emissiveMap={selectedPlanet === "earth" ? earthEmissiveMap : null}
-            emissive={
-              selectedPlanet === "earth"
-                ? new THREE.Color(0xffffff)
-                : new THREE.Color(0x000000)
-            }
-            emissiveIntensity={1.0}
-            onBeforeCompile={(shader) => {
-              if (selectedPlanet === "sun") return;
-              applyDayNightTerminator(shader);
-              shader.uniforms.uSunDirection =
-                customUniformsRef.current.uSunDirection;
-            }}
-          />
+          {selectedPlanet !== "sun" ? (
+            <CustomShaderMaterial
+              baseMaterial={THREE.MeshStandardMaterial}
+              vertexShader={dayNightVertexShader}
+              fragmentShader={dayNightFragmentShader}
+              uniforms={customUniformsRef.current}
+              map={planetTexture}
+              normalMap={selectedPlanet === "earth" ? earthNormalMap : null}
+              metalnessMap={
+                selectedPlanet === "earth" ? earthSpecularMap : null
+              }
+              roughness={
+                selectedPlanet === "earth" || selectedPlanet === "venus"
+                  ? 0.6
+                  : 0.8
+              }
+              metalness={selectedPlanet === "earth" ? 0.4 : 0.1}
+              emissiveMap={selectedPlanet === "earth" ? earthEmissiveMap : null}
+              emissive={
+                selectedPlanet === "earth"
+                  ? new THREE.Color(0xffffff)
+                  : new THREE.Color(0x000000)
+              }
+              emissiveIntensity={1.0}
+            />
+          ) : (
+            <meshBasicMaterial map={planetTexture} />
+          )}
           {/* Anneaux de Saturne en mode Globe */}
           {selectedPlanet === "saturn" && (
             <mesh rotation={[Math.PI / 2 + 0.3, 0, 0]}>

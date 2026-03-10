@@ -28,6 +28,28 @@ export function SolarSystem() {
 
   const { transitionToMode } = useSkyStore();
 
+  // Ref to track timeouts for each planet to delay preloading
+  const hoverTimeouts = useRef<Record<string, ReturnType<typeof setTimeout>>>(
+    {},
+  );
+
+  const handlePointerOver = (e: any, planetId: string, texturePath: string) => {
+    e.stopPropagation();
+    document.body.style.cursor = "pointer";
+    // Delay preloading by 350ms to prevent downloading on fast sweeps
+    hoverTimeouts.current[planetId] = setTimeout(() => {
+      useTexture.preload(texturePath);
+    }, 350);
+  };
+
+  const handlePointerOut = (planetId: string) => {
+    document.body.style.cursor = "auto";
+    if (hoverTimeouts.current[planetId]) {
+      clearTimeout(hoverTimeouts.current[planetId]);
+      delete hoverTimeouts.current[planetId];
+    }
+  };
+
   useFrame((state) => {
     if (sunMaterialRef.current && sunLightRef.current) {
       // Pulsation subtile via une onde sinusoïdale basée sur le temps
@@ -74,14 +96,10 @@ export function SolarSystem() {
           e.stopPropagation();
           transitionToMode("globe", "sun");
         }}
-        onPointerOver={(e) => {
-          e.stopPropagation();
-          document.body.style.cursor = "pointer";
-          useTexture.preload(PLANETS_METADATA.sun.textureGlobePath);
-        }}
-        onPointerOut={() => {
-          document.body.style.cursor = "auto";
-        }}
+        onPointerOver={(e) =>
+          handlePointerOver(e, "sun", PLANETS_METADATA.sun.textureGlobePath)
+        }
+        onPointerOut={() => handlePointerOut("sun")}
       >
         {/* Soleil imposant pour rester indéniablement le centre de masse masssif vis-à-vis des géantes */}
         <sphereGeometry args={[PLANETS_METADATA.sun.visualSize, 64, 64]} />
@@ -111,14 +129,14 @@ export function SolarSystem() {
                 e.stopPropagation();
                 transitionToMode("globe", p.id);
               }}
-              onPointerOver={(e) => {
-                e.stopPropagation();
-                document.body.style.cursor = "pointer";
-                useTexture.preload(PLANETS_METADATA[p.id].textureGlobePath);
-              }}
-              onPointerOut={() => {
-                document.body.style.cursor = "auto";
-              }}
+              onPointerOver={(e) =>
+                handlePointerOver(
+                  e,
+                  p.id,
+                  PLANETS_METADATA[p.id].textureGlobePath,
+                )
+              }
+              onPointerOut={() => handlePointerOut(p.id)}
             >
               <sphereGeometry
                 args={[PLANETS_METADATA[p.id].visualSize, 64, 64]}

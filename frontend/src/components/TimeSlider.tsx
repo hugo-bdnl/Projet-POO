@@ -26,20 +26,23 @@ export const TimeSlider = () => {
   }, []);
 
   const triggerUpdate = (isoString: string) => {
-    // Met à jour l'heure globale en direct (fluide côté Globe car transiente)
-    setTimestamp(isoString);
+    // Met à jour l'heure globale transiente pour la rotation visuelle fluide
+    useSkyStore.getState().setDragTimestamp(isoString);
 
     // Si on est en mode sky, on ne spamme pas l'API Python 60 fois par seconde.
     // On debounce (100ms) pour requérir seulement à l'arrêt ou au ralentissement du slide.
     if (viewMode === "sky" && selectedPoint) {
       if (timerRef.current) clearTimeout(timerRef.current);
       timerRef.current = setTimeout(() => {
+        setTimestamp(isoString); // Valide l'heure globale pour le Globe (optionnel si géré)
         fetchVisibleStars(
           selectedPoint.latitude,
           selectedPoint.longitude,
           isoString,
         );
       }, 100);
+    } else {
+      setTimestamp(isoString); // Globe mode ou système sans API lourde
     }
   };
 
@@ -85,6 +88,7 @@ export const TimeSlider = () => {
     setDateStr(localISOTime);
     setHourRatio(now.getHours() + now.getMinutes() / 60);
     setTimestamp(""); // Default backend behavior
+    useSkyStore.getState().setDragTimestamp(undefined);
 
     if (viewMode === "sky" && selectedPoint) {
       fetchVisibleStars(
@@ -116,7 +120,15 @@ export const TimeSlider = () => {
         minWidth: "350px",
       }}
     >
-      <div style={{ display: "flex", gap: "15px", alignItems: "center", width: "100%", justifyContent: "space-between" }}>
+      <div
+        style={{
+          display: "flex",
+          gap: "15px",
+          alignItems: "center",
+          width: "100%",
+          justifyContent: "space-between",
+        }}
+      >
         <input
           type="date"
           value={dateStr.slice(0, 10)}
@@ -125,7 +137,9 @@ export const TimeSlider = () => {
             const newDate = e.target.value;
             const currentTime = dateStr.slice(11, 16);
             if (newDate) {
-              handleDateChange({ target: { value: `${newDate}T${currentTime || "12:00"}` } } as any);
+              handleDateChange({
+                target: { value: `${newDate}T${currentTime || "12:00"}` },
+              } as any);
             }
           }}
           style={{
@@ -137,9 +151,17 @@ export const TimeSlider = () => {
             fontFamily: "monospace",
           }}
         />
-        <div style={{ fontWeight: "bold", fontFamily: "monospace", color: "#00f0ff" }}>
-          {Math.floor(hourRatio).toString().padStart(2, '0')}:
-          {Math.floor((hourRatio % 1) * 60).toString().padStart(2, '0')}
+        <div
+          style={{
+            fontWeight: "bold",
+            fontFamily: "monospace",
+            color: "#00f0ff",
+          }}
+        >
+          {Math.floor(hourRatio).toString().padStart(2, "0")}:
+          {Math.floor((hourRatio % 1) * 60)
+            .toString()
+            .padStart(2, "0")}
         </div>
         <button
           onClick={handleResetToNow}
@@ -158,7 +180,14 @@ export const TimeSlider = () => {
       </div>
 
       {viewMode !== "system" && (
-        <div style={{ width: "100%", display: "flex", alignItems: "center", gap: "10px" }}>
+        <div
+          style={{
+            width: "100%",
+            display: "flex",
+            alignItems: "center",
+            gap: "10px",
+          }}
+        >
           <span style={{ fontSize: "0.8em", color: "#666" }}>0h</span>
           <input
             type="range"

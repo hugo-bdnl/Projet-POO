@@ -138,12 +138,19 @@ export const NightSky = () => {
         const ncpVector = new THREE.Vector3(nx, ny, nz).normalize();
 
         const baseDate = new Date(baseTimeStr);
-        const calculationDate = currentTimeStr ? new Date(currentTimeStr) : new Date();
+        // Use the fluid drag timestamp if we are currently dragging the time slider, otherwise the real one
+        const activeTimeStr = state.dragTimestamp || currentTimeStr;
+        const calculationDate = activeTimeStr
+          ? new Date(activeTimeStr)
+          : new Date();
 
         const deltaGmst = computeGMST(calculationDate) - computeGMST(baseDate);
 
         // La Terre tourne vers l'Est (+), donc la voûte céleste nous donne l'impression de tourner vers l'Ouest (-)
-        skyRotationGroup.current.setRotationFromAxisAngle(ncpVector, THREE.MathUtils.degToRad(-deltaGmst));
+        skyRotationGroup.current.setRotationFromAxisAngle(
+          ncpVector,
+          THREE.MathUtils.degToRad(-deltaGmst),
+        );
       } else {
         // Reset
         skyRotationGroup.current.setRotationFromEuler(new THREE.Euler(0, 0, 0));
@@ -198,7 +205,10 @@ export const NightSky = () => {
           }}
         >
           <bufferGeometry>
-            <bufferAttribute attach="attributes-position" args={[positions, 3]} />
+            <bufferAttribute
+              attach="attributes-position"
+              args={[positions, 3]}
+            />
             <bufferAttribute attach="attributes-color" args={[colors, 3]} />
             <bufferAttribute attach="attributes-size" args={[sizes, 1]} />
             <bufferAttribute

@@ -505,16 +505,14 @@ uranus.webp, neptune.webp
 
 **Tâches identifiées suite à l'audit du mode Globe Unifié :**
 
-1. **[CPU] Optimisation de l'Éphéméride** : 
-   - *Problème :* `computePlanetPositions` (théorie VSOP87B) est appelé 60 fois par seconde (`useFrame`) dans le `Globe.tsx` pour tous les astres de l'univers, alors que le temps n'est modifié intentionnellement qu'avec le TimeSlider.
-   - *Solution :* Mettre en cache (memoize) le vecteur `sunDirectionGlobal`. Il ne doit être recalculé uniquement que lorsque `tsStr` (TimeSlider) change, ou au grand maximum avec un limiteur de FPS (throttle).
-2. **[Réseau/Mémoire] Temporisation du prechargement dynamique** :
-   - *Problème :* Le `onPointerOver` déclenche le téléchargement (`useTexture.preload()`) instantané de la map 4K ou 8K. Le survol rapide du système solaire par l'utilisateur télécharge inutilement 50-100 Mo de textures.
-   - *Solution :* Assigner un `setTimeout` (~300 à 400ms) au `onPointerOver` qui se cancelle via `onPointerOut`. Ainsi, seule la volonté de zoomer vers la planète déclenche le téléchargement en avance.
-3. **[WebGL] Recompilation du Shader "DayNight"** :
-   - *Problème :* L'implémentation actuelle par `onBeforeCompile` sur le `meshStandardMaterial` de Three.js provoque une micro-saccade vidéo très brève à l'initialisation du composant Globe (Le GPU doit recompiler).
-   - *Solution :* Migrer si nécessaire vers `CustomShaderMaterial` (`drei/CSM`) si les tests révèlent une nuisance visible (hiccup) sur des GPU modestes, car CSM gère mieux la compilation asynchrone et les pools de cache.
+- [x] **1. [CPU] Optimisation de l'Éphéméride** :
+  - _Statut :_ **Résolu**. `computePlanetPositions` et `sunDirectionGlobal` sont désormais correctement mémoïsés via `useMemo` dans `Globe.tsx` et ne se recalculent que lorsque le temps (`tsStr`) ou la planète sélectionnée change, évitant ainsi un appel à chaque frame.
 
+- [x] **2. [Réseau/Mémoire] Temporisation du prechargement dynamique** :
+  - _Statut :_ **Résolu**. `SolarSystem.tsx` utilise un ref `hoverTimeouts` avec un `setTimeout` de 350ms sur le `onPointerOver`, qui est annulé via `onPointerOut`. Cela évite les téléchargements inutiles lors d'un survol rapide.
+
+- [x] **3. [WebGL] Recompilation du Shader "DayNight"** :
+  - _Statut :_ **Résolu**. Le code de `Globe.tsx` a été refactoré pour utiliser `CustomShaderMaterial` au lieu de `onBeforeCompile`, et `dayNightShader.ts` exporte désormais des chunks GLSL séparés pour éviter les micro-saccades de compilation.
 
 ---
 

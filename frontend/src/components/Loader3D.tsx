@@ -1,16 +1,39 @@
 import { Html, useProgress } from "@react-three/drei";
 import "./TransitionScreen.css";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useSkyStore } from "../stores/useSkyStore";
 
 function LoaderUI() {
   const { active, progress } = useProgress();
-  const isTransitioning = useSkyStore((s) => s.isTransitioning);
+  const { isTransitioning, viewMode, selectedPlanet } = useSkyStore();
 
-  // Affiche l'écran si R3F charge OU si on force une transition
-  const visible = active || isTransitioning;
   const [displayProgress, setDisplayProgress] = useState(0);
+  const [isFirstLoad, setIsFirstLoad] = useState(true);
+  const [forceVisibleTimer, setForceVisibleTimer] = useState(true);
+  const prevModeRef = useRef(viewMode);
+
+  useEffect(() => {
+    prevModeRef.current = viewMode;
+  }, [viewMode]);
+
+  // Timer de 1.5s pour forcer le chargement initial
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setForceVisibleTimer(false);
+    }, 1500);
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Marquer la fin du premier chargement une fois le temps min passé et ThreeJS prêt
+  useEffect(() => {
+    if (isFirstLoad && !active && !forceVisibleTimer) {
+      setIsFirstLoad(false);
+    }
+  }, [active, forceVisibleTimer, isFirstLoad]);
+
+  // Affiche l'écran si timer initial en cours, ou R3F charge, ou on force une transition
+  const visible = forceVisibleTimer || active || isTransitioning;
 
   // Suit la progression réelle de ThreeJS
   useEffect(() => {
@@ -19,8 +42,8 @@ function LoaderUI() {
     }
   }, [active, progress]);
 
-  // Si on est en transition forcée (textures en cache),
-  // on fait grimper la barre à 100% de manière fluide pendant la 1.5 seconde.
+  // Si on est en transition forcée (textures en cache) ou au premier chargement forcé,
+  // on fait grimper la barre à 100% de manière fluide.
   useEffect(() => {
     if (visible && !active) {
       const interval = setInterval(() => {
@@ -33,6 +56,32 @@ function LoaderUI() {
   if (!visible) {
     if (displayProgress !== 0) setDisplayProgress(0); // Reset for next time
     return null;
+  }
+
+  // Détermination du sous-titre dynamique
+  let titleText = "Récupération du flux vidéo en cours...";
+  let statusText = "";
+
+  if (isFirstLoad) {
+    // 🛠️ TEXTE DU PREMIER CHARGEMENT
+    titleText = "Session initialization...";
+    statusText = ""; // Aucun sous-texte
+  } else {
+    // 🛠️ TEXTES DE TRANSITION (MODIFIABLES ICI SELON LES SITUATIONS)
+    if (viewMode === "globe") {
+      if (prevModeRef.current === "sky") {
+        statusText = "Back to globe";
+      } else {
+        const planetName = selectedPlanet
+          ? selectedPlanet.charAt(0).toUpperCase() + selectedPlanet.slice(1)
+          : "Planète";
+        statusText = `Cible : ${planetName}`;
+      }
+    } else if (viewMode === "sky") {
+      statusText = "Cible : Étoiles";
+    } else if (viewMode === "system") {
+      statusText = "Back to system";
+    }
   }
 
   return (
@@ -57,10 +106,8 @@ function LoaderUI() {
           <div className="spinner-core"></div>
         </div>
 
-        {/* 🛠️ TEXTE PERSONNALISABLE ICI : Titre principal du chargement */}
-        <h2 className="transition-title">
-          Récupération du flux vidéo en cours...
-        </h2>
+        {/* Titre principal dynamique */}
+        <h2 className="transition-title">{titleText}</h2>
 
         <div className="progress-bar-container">
           <div
@@ -69,9 +116,8 @@ function LoaderUI() {
           ></div>
         </div>
 
-        {/* 🛠️ TEXTE PERSONNALISABLE ICI : Sous-titre avec le pourcentage */}
         <div className="progress-text">
-          {displayProgress.toFixed(0)}% Module XKT-500
+          {displayProgress.toFixed(0)}%{statusText ? ` ${statusText}` : ""}
         </div>
       </div>
     </div>

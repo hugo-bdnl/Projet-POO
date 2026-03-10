@@ -8,6 +8,7 @@ interface SkyState {
   viewMode: ViewMode;
   timestamp: string | undefined;
   baseTimestamp: string | undefined;
+  dragTimestamp: string | undefined;
   stars: VisibleStar[];
   /** Étoiles du pattern de constellation absentes de stars[] (mag > 5) */
   constellationExtraStars: VisibleStar[];
@@ -23,6 +24,7 @@ interface SkyState {
 
   setViewMode: (mode: ViewMode) => void;
   setTimestamp: (iso: string) => void;
+  setDragTimestamp: (iso: string | undefined) => void;
   fetchVisibleStars: (
     lat: number,
     lon: number,
@@ -55,6 +57,7 @@ export const useSkyStore = create<SkyState>((set, get) => ({
   viewMode: "system",
   timestamp: undefined,
   baseTimestamp: undefined,
+  dragTimestamp: undefined,
   stars: [],
   constellationExtraStars: [],
   loadingStars: false,
@@ -68,6 +71,7 @@ export const useSkyStore = create<SkyState>((set, get) => ({
 
   setViewMode: (mode) => set({ viewMode: mode }),
   setTimestamp: (iso) => set({ timestamp: iso }),
+  setDragTimestamp: (iso) => set({ dragTimestamp: iso }),
 
   fetchVisibleStars: async (lat, lon, timestamp) => {
     set({ loadingStars: true, error: null, currentLat: lat, currentLon: lon });

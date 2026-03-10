@@ -6,7 +6,7 @@ import { computePlanetPositions } from "../utils/planetaryEphemeris";
 export const PlanetInfoCard = () => {
   const {
     viewMode,
-    setViewMode,
+    transitionToMode,
     selectedPlanet,
     setSelectedPlanet,
     timestamp,
@@ -45,7 +45,7 @@ export const PlanetInfoCard = () => {
       <button
         onClick={() => {
           setSelectedPlanet(null);
-          setViewMode("system");
+          transitionToMode("system");
         }}
         style={{
           background: "transparent",
