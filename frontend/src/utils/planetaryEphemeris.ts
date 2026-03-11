@@ -63,9 +63,20 @@ function sphericalToVector3(
   lonRad: number,
   latRad: number,
   radius: number,
+  flatten: boolean = false
 ): THREE.Vector3 {
   // L (lon) correspond au plan du système solaire (X, Z).
   // B (lat) est l'élévation par rapport à ce plan (Y).
+  
+  if (flatten) {
+    // Optimisation: si aplati, cos(0) = 1, sin(0) = 0
+    return new THREE.Vector3(
+      radius * Math.cos(lonRad),
+      0,
+      radius * -Math.sin(lonRad),
+    );
+  }
+
   return new THREE.Vector3(
     radius * Math.cos(latRad) * Math.cos(lonRad),
     radius * Math.sin(latRad),
@@ -124,7 +135,7 @@ export function computePlanetPositions(
 
     // Position cartésienne compressée pour l'affichage 3D
     const renderedRadius = compressRadius(helio.range);
-    const pos3D = sphericalToVector3(helio.lon, helio.lat, renderedRadius);
+    const pos3D = sphericalToVector3(helio.lon, helio.lat, renderedRadius, true);
 
     // Génération du tracé de l'orbite (128 segments) uniquement si demandé (sinon ça lag sévèrement dans useFrame)
     const orbitPoints: THREE.Vector3[] = [];
@@ -142,6 +153,7 @@ export function computePlanetPositions(
           helioOrbit.lon,
           helioOrbit.lat,
           orbitRenderedRadius,
+          true
         );
         orbitPoints.push(orbitPos3D);
       }

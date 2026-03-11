@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { useRef } from "react";
+import { useRef, useMemo, useEffect } from "react";
 import { useFrame, type ThreeEvent } from "@react-three/fiber";
 import { useTexture, Line } from "@react-three/drei";
 import { useSkyStore } from "../stores/useSkyStore";
@@ -14,14 +14,16 @@ import { PLANETS_METADATA } from "../types/planets";
 export function SolarSystem() {
   const { timestamp } = useSkyStore();
 
-  // Utilise la date du composant "time slider" (timestamp)
-  // S'il n'y en a pas on utilise la date actuelle réelle du PC
-  const calculationDate = timestamp ? new Date(timestamp) : new Date();
+  // Optimisation: Memoize pour éviter de recalculer les 128 points d'orbite à chaque render
+  const calculationDate = useMemo(() => timestamp ? new Date(timestamp) : new Date(), [timestamp]);
+  const animatedDateRef = useRef(calculationDate.getTime());
 
-  // Le calcul d'éphémérides est très rapide et fait ~0.2ms, on peut le faire à la frame
-  // ou l'enregistrer dans un ref si on veut optimiser davantage,
-  // mais React le recalcule gracieusement au changement du time slider.
-  const planetPositions = computePlanetPositions(calculationDate);
+  const planetPositions = useMemo(() => computePlanetPositions(calculationDate), [calculationDate]);
+  
+  useEffect(() => {
+    animatedDateRef.current = calculationDate.getTime();
+  }, [calculationDate]);
+
   const sunPos = planetPositions.get("sun")!;
   const sunMaterialRef = useRef<THREE.MeshBasicMaterial>(null);
   const sunLightRef = useRef<THREE.PointLight>(null);
@@ -70,7 +72,14 @@ export function SolarSystem() {
       sunLightRef.current.intensity = 5 * pulse; // Légèrement plus intense
     }
 
-    // Animation de survol (agrandissement) - pas de recréation de variables ou objets
+    // Avancer le temps pour l'animation (ex: 15 jours par seconde)
+    const SIMULATION_SPEED = 15 * 86400 * 1000;
+    animatedDateRef.current += delta * SIMULATION_SPEED;
+
+    // Calcul optimisé (skipOrbits = true) pour l'animation
+    const newPositions = computePlanetPositions(new Date(animatedDateRef.current), true);
+
+    // Animation de survol (agrandissement) et mise à jour des positions orbitale
     for (const id in meshesRef.current) {
       const mesh = meshesRef.current[id];
       if (mesh) {
@@ -84,6 +93,17 @@ export function SolarSystem() {
         } else if (currentScale !== targetScale) {
           mesh.scale.setScalar(targetScale);
         }
+
+        // Mise à jour de la position orbitale
+        if (id !== "sun") {
+          const newPos = newPositions.get(id as any);
+          if (newPos) {
+            mesh.position.copy(newPos.position3D);
+          }
+        }
+
+        // Animation de rotation (spin) sur eux-mêmes
+        mesh.rotation.y += delta * (id === "sun" ? 0.05 : 0.5);
       }
     }
   });
