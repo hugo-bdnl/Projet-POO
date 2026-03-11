@@ -7,6 +7,7 @@ import { useSkyStore } from "../stores/useSkyStore";
 import { computePlanetPositions } from "../utils/planetaryEphemeris";
 import { PLANETS_METADATA } from "../types/planets";
 import { AsteroidBelt } from "./AsteroidBelt";
+import { KuiperBelt } from "./KuiperBelt";
 
 /**
  * Composant principal de la vue Système Solaire.
@@ -174,6 +175,9 @@ export function SolarSystem() {
 
       {/* Ceinture d'astéroïdes */}
       <AsteroidBelt />
+
+      {/* Ceinture de Kuiper */}
+      <KuiperBelt />
 
       {/* 3. Les Planètes */}
       {Array.from(planetPositions.values()).map((p) => {

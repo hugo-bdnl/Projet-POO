@@ -402,7 +402,7 @@ Le démarrage de l'application en mode "Système Solaire" requiert le chargement
 - [x] L'ajustement des orbites (orbites au niveau du soleil)
 - [x] L'animation sur le zoom des planètes (hover scaling)
 - [x] Implémenter une représentation 3D de la ceinture d'astéroïdes réelle entre Mars et Jupiter (uniquement en mode système)
-- [ ] Implémenter une représentation 3D de la ceinture de Kuiper (uniquement en mode système)
+- [x] Implémenter une représentation 3D de la ceinture de Kuiper (uniquement en mode système)
 
 **Livrable** :
 - Une simulation du système solaire fluide, interactive, et performante.
