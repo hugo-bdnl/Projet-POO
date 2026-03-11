@@ -33,24 +33,33 @@ export function SolarSystem() {
     {},
   );
 
+  // Optimisations: Stockages sans re-rendus pour l'animation au survol
+  const meshesRef = useRef<Record<string, THREE.Group | THREE.Mesh | null>>({});
+  const hoveredRef = useRef<Record<string, boolean>>({});
+
   const handlePointerOver = (e: ThreeEvent<PointerEvent>, planetId: string, texturePath: string) => {
     e.stopPropagation();
     document.body.style.cursor = "pointer";
+    hoveredRef.current[planetId] = true;
     // Delay preloading by 350ms to prevent downloading on fast sweeps
     hoverTimeouts.current[planetId] = setTimeout(() => {
-      useTexture.preload(texturePath);
+      // Préchargement furtif via le cache du navigateur (évite de réveiller THREE.DefaultLoadingManager)
+      // Cela supprime le parasite visuel (l'écran de chargement qui s'affichait au survol)
+      const img = new Image();
+      img.src = texturePath;
     }, 350);
   };
 
   const handlePointerOut = (planetId: string) => {
     document.body.style.cursor = "auto";
+    hoveredRef.current[planetId] = false;
     if (hoverTimeouts.current[planetId]) {
       clearTimeout(hoverTimeouts.current[planetId]);
       delete hoverTimeouts.current[planetId];
     }
   };
 
-  useFrame((state) => {
+  useFrame((state, delta) => {
     if (sunMaterialRef.current && sunLightRef.current) {
       // Pulsation subtile via une onde sinusoïdale basée sur le temps
       const t = state.clock.elapsedTime;
@@ -59,6 +68,23 @@ export function SolarSystem() {
       // On modifie la couleur de la texture émissive perçue
       sunMaterialRef.current.color.setScalar(pulse);
       sunLightRef.current.intensity = 5 * pulse; // Légèrement plus intense
+    }
+
+    // Animation de survol (agrandissement) - pas de recréation de variables ou objets
+    for (const id in meshesRef.current) {
+      const mesh = meshesRef.current[id];
+      if (mesh) {
+        const targetScale = hoveredRef.current[id] ? 1.5 : 1.0;
+        const currentScale = mesh.scale.x;
+
+        if (Math.abs(currentScale - targetScale) > 0.001) {
+          mesh.scale.setScalar(
+            THREE.MathUtils.lerp(currentScale, targetScale, delta * 15)
+          );
+        } else if (currentScale !== targetScale) {
+          mesh.scale.setScalar(targetScale);
+        }
+      }
     }
   });
 
@@ -91,6 +117,9 @@ export function SolarSystem() {
       {/* Plus fort pour "déboucher" les zones d'ombres des textures */}
       {/* 2. Le Soleil */}
       <mesh
+        ref={(el) => {
+          meshesRef.current["sun"] = el;
+        }}
         position={sunPos.position3D}
         onClick={(e) => {
           e.stopPropagation();
@@ -122,47 +151,51 @@ export function SolarSystem() {
               />
             )}
 
-            {/* Corps de la planète */}
-            <mesh
-              position={p.position3D}
-              onClick={(e) => {
-                e.stopPropagation();
-                transitionToMode("globe", p.id);
+            {/* Groupe englobant pour la position et l'agrandissement global au survol */}
+            <group
+              ref={(el) => {
+                meshesRef.current[p.id] = el;
               }}
-              onPointerOver={(e) =>
-                handlePointerOver(
-                  e,
-                  p.id,
-                  PLANETS_METADATA[p.id].textureGlobePath,
-                )
-              }
-              onPointerOut={() => handlePointerOut(p.id)}
+              position={p.position3D}
             >
-              <sphereGeometry
-                args={[PLANETS_METADATA[p.id].visualSize, 64, 64]}
-              />
-              <meshStandardMaterial
-                map={textures[p.id]}
-                roughness={p.id === "earth" || p.id === "venus" ? 0.4 : 0.7}
-              />
-            </mesh>
-
-            {/* Anneaux de Saturne simplifiés temporaires */}
-            {p.id === "saturn" && (
+              {/* Corps de la planète */}
               <mesh
-                position={p.position3D}
-                rotation={[Math.PI / 2 + 0.3, 0, 0]}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  transitionToMode("globe", p.id);
+                }}
+                onPointerOver={(e) =>
+                  handlePointerOver(
+                    e,
+                    p.id,
+                    PLANETS_METADATA[p.id].textureGlobePath,
+                  )
+                }
+                onPointerOut={() => handlePointerOut(p.id)}
               >
-                {/* Taille des anneaux ajustée à la NOUVELLE taille de Saturne (5.0) */}
-                <ringGeometry args={[6.0, 11.0, 64]} />
+                <sphereGeometry
+                  args={[PLANETS_METADATA[p.id].visualSize, 64, 64]}
+                />
                 <meshStandardMaterial
-                  map={textures.saturnRing}
-                  side={THREE.DoubleSide}
-                  transparent
-                  opacity={0.8}
+                  map={textures[p.id]}
+                  roughness={p.id === "earth" || p.id === "venus" ? 0.4 : 0.7}
                 />
               </mesh>
-            )}
+
+              {/* Anneaux de Saturne simplifiés temporaires */}
+              {p.id === "saturn" && (
+                <mesh rotation={[Math.PI / 2 + 0.3, 0, 0]}>
+                  {/* Taille des anneaux ajustée à la NOUVELLE taille de Saturne (5.0) */}
+                  <ringGeometry args={[6.0, 11.0, 64]} />
+                  <meshStandardMaterial
+                    map={textures.saturnRing}
+                    side={THREE.DoubleSide}
+                    transparent
+                    opacity={0.8}
+                  />
+                </mesh>
+              )}
+            </group>
           </group>
         );
       })}
