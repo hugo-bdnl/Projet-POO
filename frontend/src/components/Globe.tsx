@@ -54,8 +54,7 @@ export function Globe() {
     "/textures/planets/8k/8k_saturn_ring_alpha.webp",
   );
 
-  // Pré-allocation pour éviter instanciation à chaque frame
-  const localSunDirectionRef = useRef(new THREE.Vector3());
+    // localSunDirectionRef retiré car nous exploitons directement sunDirectionGlobal (World Space)
 
   // Les positions et rotations ne changent que si le temps (tsStr) ou la planète cible change
   const { gmstDeg, sunDirectionGlobal } = useMemo(() => {
@@ -88,14 +87,9 @@ export function Globe() {
     }
 
     if (meshRef.current) {
-      // Le terminateur Jour/Nuit doit connaître la direction de la lumière DANS le référentiel tournant du mesh.
-      // On utilise un useRef pour manipuler la copie sans "new THREE.Vector3()" à 60 FPS
-      localSunDirectionRef.current.copy(sunDirectionGlobal);
-      meshRef.current.worldToLocal(localSunDirectionRef.current).normalize();
-
-      customUniformsRef.current.uSunDirection.value.copy(
-        localSunDirectionRef.current,
-      );
+      // Le terminateur Jour/Nuit calcule déjà la normale dans l'espace monde (vWorldNormalTerminator).
+      // Il faut donc lui passer la direction du soleil dans l'espace monde également pour que le calcul (dot product) soit correct.
+      customUniformsRef.current.uSunDirection.value.copy(sunDirectionGlobal);
     }
   });
 
