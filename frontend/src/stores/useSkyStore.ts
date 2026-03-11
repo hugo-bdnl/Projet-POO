@@ -55,6 +55,8 @@ interface SkyState {
   toggleSystemRotation: () => void;
   systemRotationSpeed: number; // En jours par seconde
   setSystemRotationSpeed: (speed: number) => void;
+  showOrbits: boolean;
+  toggleOrbits: () => void;
 }
 
 export const useSkyStore = create<SkyState>((set, get) => ({
@@ -74,9 +76,11 @@ export const useSkyStore = create<SkyState>((set, get) => ({
   isTransitioning: false,
   isSystemRotating: true,
   systemRotationSpeed: 15,
+  showOrbits: true,
 
   toggleSystemRotation: () => set((s) => ({ isSystemRotating: !s.isSystemRotating })),
   setSystemRotationSpeed: (speed) => set({ systemRotationSpeed: speed }),
+  toggleOrbits: () => set((s) => ({ showOrbits: !s.showOrbits })),
 
   setViewMode: (mode) => set({ viewMode: mode }),
   setTimestamp: (iso) => set({ timestamp: iso }),

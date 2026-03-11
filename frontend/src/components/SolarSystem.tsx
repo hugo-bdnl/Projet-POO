@@ -2,6 +2,7 @@ import * as THREE from "three";
 import { useRef, useMemo, useEffect } from "react";
 import { useFrame, type ThreeEvent } from "@react-three/fiber";
 import { useTexture, Line } from "@react-three/drei";
+import { EffectComposer, Bloom } from "@react-three/postprocessing";
 import { useSkyStore } from "../stores/useSkyStore";
 import { computePlanetPositions } from "../utils/planetaryEphemeris";
 import { PLANETS_METADATA } from "../types/planets";
@@ -13,7 +14,7 @@ import { AsteroidBelt } from "./AsteroidBelt";
  * aux positions réelles calculées via VSOP87B (astronomia).
  */
 export function SolarSystem() {
-  const { timestamp, isSystemRotating, systemRotationSpeed } = useSkyStore();
+  const { timestamp, isSystemRotating, systemRotationSpeed, showOrbits } = useSkyStore();
 
   // Optimisation: Memorize pour éviter de recalculer les 128 points d'orbite à chaque render
   const calculationDate = useMemo(() => timestamp ? new Date(timestamp) : new Date(), [timestamp]);
@@ -140,6 +141,17 @@ export function SolarSystem() {
       />
       <ambientLight intensity={0.4} />{" "}
       {/* Plus fort pour "déboucher" les zones d'ombres des textures */}
+
+      {/* Ajout d'un effet Bloom ciblé pour l'esthétique "sans orbite" */}
+      <EffectComposer>
+        <Bloom
+          luminanceThreshold={0.2} // Ajusté pour que le soleil brille fort (1.0), et les planètes légèrement
+          luminanceSmoothing={0.9} // Transition douce
+          intensity={0.4} // Intensité globale subtile pour ne pas aveugler
+          mipmapBlur // Requis pour un rendu moderne et propre
+        />
+      </EffectComposer>
+
       {/* 2. Le Soleil */}
       <mesh
         ref={(el) => {
@@ -170,7 +182,7 @@ export function SolarSystem() {
         return (
           <group key={p.id}>
             {/* Orbite 3D exacte, respectant l'inclinaison par rapport au plan */}
-            {p.orbitPoints && p.orbitPoints.length > 0 && (
+            {showOrbits && p.orbitPoints && p.orbitPoints.length > 0 && (
               <Line
                 points={p.orbitPoints}
                 color="#ffffff"

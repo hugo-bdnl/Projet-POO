@@ -125,6 +125,8 @@ function App() {
     toggleSystemRotation,
     systemRotationSpeed,
     setSystemRotationSpeed,
+    showOrbits,
+    toggleOrbits,
   } = useSkyStore();
   const { error: constellationError } = useConstellationStore();
   const { error: obsError } = useObservationStore();
@@ -326,6 +328,38 @@ function App() {
                 <span>365 j/s</span>
               </div>
             </div>
+
+            {/* Ligne 3 : Toggle Orbites */}
+            <button
+              onClick={toggleOrbits}
+              style={{
+                fontSize: "1rem",
+                padding: "8px 20px",
+                borderRadius: "25px",
+                background: showOrbits ? "rgba(0, 240, 255, 0.15)" : "transparent",
+                border: "1px solid",
+                borderColor: showOrbits ? "rgba(0, 240, 255, 0.5)" : "#333",
+                color: "white",
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "8px",
+                fontWeight: "bold",
+                transition: "all 0.2s ease",
+                width: "100%",
+              }}
+              onMouseOver={(e) => {
+                e.currentTarget.style.background = "rgba(0, 240, 255, 0.3)";
+              }}
+              onMouseOut={(e) => {
+                e.currentTarget.style.background = showOrbits
+                  ? "rgba(0, 240, 255, 0.15)"
+                  : "transparent";
+              }}
+            >
+              {showOrbits ? "ORBITES ON" : "ORBITES OFF"}
+            </button>
           </div>
         </div>
       )}
