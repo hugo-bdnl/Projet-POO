@@ -39,13 +39,14 @@ void main() {
     float luma = dot(csm_Emissive, vec3(0.299, 0.587, 0.114));
     
     // cityMask vaut 0 pour les zones sombres (terres/océans), monte jusqu'à 1 pour les lumières vives
-    // En baissant le seuil bas (0.1 au lieu de 0.2), on attrape plus de lumières faibles
-    float cityMask = smoothstep(0.1, 0.5, luma);
+    // En remontant le seuil bas à 0.2, on élimine le voile lumineux résiduel sur les océans
+    float cityMask = smoothstep(0.2, 0.5, luma);
     
-    // On booste l'intensité de ces villes (x 1.5)
+    // On booste l'intensité de ces villes (x 1.5) pour qu'elles ressortent bien
     csm_Emissive = csm_Emissive * cityMask * 1.5;
 
-    // Appliquer l'intensité nuit (les villes s'allument quand on passe dans l'ombre)
-    csm_Emissive *= nightIntensity * 0.4; // Multiplier par 0.4 au lieu de 0.8 pour rendre la nuit plus sombre
+    // Appliquer l'intensité nuit en baissant le multiplicateur global (0.25 au lieu de 0.4) 
+    // pour garder un côté sombre très profond
+    csm_Emissive *= nightIntensity * 0.25;
 }
 `;
