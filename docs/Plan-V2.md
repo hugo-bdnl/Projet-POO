@@ -336,7 +336,6 @@ Le démarrage de l'application en mode "Système Solaire" requiert le chargement
 - Précision vérifiée vs JPL Horizons (< 1° d'écart acceptable)
 
 ---
-
 ### SEMAINE V2-2 : VUE SYSTÈME SOLAIRE — STRUCTURE 3D
 
 **Objectif** : Afficher le système solaire navigable en mode globe
@@ -356,7 +355,6 @@ Le démarrage de l'application en mode "Système Solaire" requiert le chargement
 - Vue système solaire navigable, planètes positionnées en temps réel, orbites visibles
 
 ---
-
 ### SEMAINE V2-3 : TERMINATEUR JOUR/NUIT
 
 **Objectif** : Shader terminateur sur le globe Terre piloté par position réelle du Soleil
@@ -377,7 +375,6 @@ Le démarrage de l'application en mode "Système Solaire" requiert le chargement
 - Globe Terre avec frontière jour/nuit dynamique, lumières villes côté nuit, synchronisé avec le slider temporel
 
 ---
-
 ### SEMAINE V2-4 : VUE DÉTAILLÉE PLANÈTE
 
 **Objectif** : Clic sur une planète → exploration immersive
@@ -395,8 +392,40 @@ Le démarrage de l'application en mode "Système Solaire" requiert le chargement
 - Flow complet : Globe → Système Solaire → Clic planète → Vue globe planète → Retour
 
 ---
+### SEMAINE V2-5 : NOUVELLES FONCTIONNALITÉS (ROTATION, TERMINATEUR, ORBITES, ZOOM)
 
-### SEMAINE V2-5 : PLANÈTES EN MODE CIEL NOCTURNE
+**Objectif** : Finalisation de la physique, des animations du système et de l'expérience visuelle.
+
+**Tâches** :
+- [x] L'animation de la rotation du système (vitesses configurables, play/pause)
+- [x] Le réglage de bugs du terminateur
+- [x] L'ajustement des orbites (orbites au niveau du soleil)
+- [x] L'animation sur le zoom des planètes (hover scaling)
+
+**Livrable** :
+- Une simulation du système solaire fluide, interactive, et performante.
+
+---
+
+### SEMAINE V2-6 : AUDIT DE PERFORMANCES ET OPTIMISATIONS
+
+**Objectif** : Fiabiliser et optimiser la version V2 pour éviter la surcharge processeur (CPU), réseau et vidéo (VRAM), garantissant une compatibilité avec les mobiles et PC modestes.
+
+**Tâches identifiées suite à l'audit du mode Globe Unifié :**
+
+- [x] **1. [CPU] Optimisation de l'Éphéméride** :
+  - _Statut :_ **Résolu**. `computePlanetPositions` et `sunDirectionGlobal` sont désormais correctement mémoïsés via `useMemo` dans `Globe.tsx` et ne se recalculent que lorsque le temps (`tsStr`) ou la planète sélectionnée change, évitant ainsi un appel à chaque frame.
+
+- [x] **2. [Réseau/Mémoire] Temporisation du prechargement dynamique** :
+  - _Statut :_ **Résolu**. `SolarSystem.tsx` utilise un ref `hoverTimeouts` avec un `setTimeout` de 350ms sur le `onPointerOver`, qui est annulé via `onPointerOut`. Cela évite les téléchargements inutiles lors d'un survol rapide.
+
+- [x] **3. [WebGL] Recompilation du Shader "DayNight"** :
+  - _Statut :_ **Résolu**. Le code de `Globe.tsx` a été refactoré pour utiliser `CustomShaderMaterial` au lieu de `onBeforeCompile`, et `dayNightShader.ts` exporte désormais des chunks GLSL séparés pour éviter les micro-saccades de compilation.
+
+---
+
+**Ce plan donne une V2 autonome, dérivée de la V1 déployée, qui transforme l'app en un observatoire solaire interactif complet. 🪐**
+### SEMAINE V2-7 : PLANÈTES EN MODE CIEL NOCTURNE
 
 **Objectif** : Planètes visibles comme objets brillants dans la vue ciel
 
@@ -413,8 +442,7 @@ Le démarrage de l'application en mode "Système Solaire" requiert le chargement
 - Planètes visibles dans ciel nocturne à leur position réelle depuis le point d'obs sélectionné
 
 ---
-
-### SEMAINE V2-6 : POLISH, OPTIMISATIONS & TESTS
+### SEMAINE V2-8 : POLISH, OPTIMISATIONS & TESTS
 
 **Objectif** : Qualité production, performances vérifiées, UX cohérente
 
@@ -434,86 +462,3 @@ Le démarrage de l'application en mode "Système Solaire" requiert le chargement
 - V2 complète, stable, performante, documentée
 
 ---
-
-## 7. HORS SCOPE V2 (pour V3 éventuelle)
-
-- Satellites naturels (Lunes des planètes) — sauf Lune terrestre
-- Astéroïdes et ceinture d'astéroïdes (décorative)
-- Exoplanètes
-- Comètes (trajectoires paraboliques)
-- Carte céleste planisphère 2D
-
----
-
-## 8. RISQUES ET MITIGATION
-
-| Risque                                                         | Probabilité | Impact | Mitigation                                                                  |
-| -------------------------------------------------------------- | ----------- | ------ | --------------------------------------------------------------------------- |
-| ShaderMaterial incompatible avec normal/specular maps          | Moyenne     | Haut   | Intégrer manuellement les calculs de normal mapping dans le fragment shader |
-| `astronomia` : précision insuffisante pour planètes lointaines | Faible      | Moyen  | Fallback vers JPL Horizons API en cache 24h                                 |
-| Performances < 60 FPS en vue système solaire                   | Faible      | Haut   | LOD agressif + réduction segments sphères                                   |
-| Textures planètes 30 Mo : chargement lent                      | Moyenne     | Moyen  | Lazy load + spinner par planète + WebP                                      |
-| Transition caméra entre vues : artefacts visuels               | Moyenne     | Faible | Tests extensifs, interpolation quaternion                                   |
-
----
-
-## 9. RÉCAPITULATIF STACK V2 (delta V1)
-
-### Nouvelles dépendances npm
-
-```json
-{
-  "astronomia": "^4.x",
-  "@react-spring/three": "^9.x"
-}
-```
-
-### Nouvelles textures (public/textures/planets/)
-
-```
-sun.webp, mercury.webp, venus.webp, mars.webp,
-jupiter.webp, saturn.webp, saturn_ring.webp,
-uranus.webp, neptune.webp
-+ normal maps si disponibles : mars_normal.webp, earth_clouds.webp
-```
-
-> **OÙ ET COMMENT RÉCUPÉRER LES TEXTURES ?**
-> Pour que nous puissions avancer, tu peux télécharger les textures libres de droits sur le site **Solar System Scope** :
-> **Lien :** [https://www.solarsystemscope.com/textures/]
->
-> **À télécharger :**
->
-> - Les textures couleur 2K de toutes les planètes (Mercure à Neptune) et du Soleil.
-> - La texture des anneaux de Saturne.
-> - Les textures de la Terre (diffuse, clouds, night) si elles ne sont pas déjà en WebP et bien optimisées dans ton dossier actuel.
->
-> **Le traitement à faire :**
->
-> - Convertis chaque fichier `.jpg` téléchargé en format `.webp` avec un niveau de qualité de 80. (Tu peux utiliser un outil en ligne comme Squoosh.app ou squoosh-cli localement).
-> - **Où les placer ?** Dans le dossier existant de ton projet : `frontend/public/textures/planets/` (Créé le sous-dossier `planets` s'il n'existe pas). Renomme-les proprement en minuscules (ex: `mars.webp`, `jupiter.webp`).
-
-### Backend
-
-- **Migration PostgreSQL** : script d'import à préparer (Semaine V2-0) au lieu de sqlite.
-- Positions : 100% frontend.
-
----
-
-### SEMAINE V2-7 : AUDIT DE PERFORMANCES ET OPTIMISATIONS
-
-**Objectif** : Fiabiliser et optimiser la version V2 pour éviter la surcharge processeur (CPU), réseau et vidéo (VRAM), garantissant une compatibilité avec les mobiles et PC modestes.
-
-**Tâches identifiées suite à l'audit du mode Globe Unifié :**
-
-- [x] **1. [CPU] Optimisation de l'Éphéméride** :
-  - _Statut :_ **Résolu**. `computePlanetPositions` et `sunDirectionGlobal` sont désormais correctement mémoïsés via `useMemo` dans `Globe.tsx` et ne se recalculent que lorsque le temps (`tsStr`) ou la planète sélectionnée change, évitant ainsi un appel à chaque frame.
-
-- [x] **2. [Réseau/Mémoire] Temporisation du prechargement dynamique** :
-  - _Statut :_ **Résolu**. `SolarSystem.tsx` utilise un ref `hoverTimeouts` avec un `setTimeout` de 350ms sur le `onPointerOver`, qui est annulé via `onPointerOut`. Cela évite les téléchargements inutiles lors d'un survol rapide.
-
-- [x] **3. [WebGL] Recompilation du Shader "DayNight"** :
-  - _Statut :_ **Résolu**. Le code de `Globe.tsx` a été refactoré pour utiliser `CustomShaderMaterial` au lieu de `onBeforeCompile`, et `dayNightShader.ts` exporte désormais des chunks GLSL séparés pour éviter les micro-saccades de compilation.
-
----
-
-**Ce plan donne une V2 autonome, dérivée de la V1 déployée, qui transforme l'app en un observatoire solaire interactif complet. 🪐**

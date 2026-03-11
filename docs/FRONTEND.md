@@ -61,7 +61,10 @@ frontend/src/
 ├── index.css            # Reset / variables CSS de base
 │
 ├── components/          # Composants React (15 fichiers)
-│   ├── Globe.tsx        # Sphère terrestre 3D (mode globe)
+│   ├── Globe.tsx        # Sphère terrestre 3D avec shader terminateur
+│   ├── SolarSystem.tsx  # Système solaire en 3D (mode globe)
+│   ├── PlanetInfoCard.tsx # Panneau info détaillé (Planètes)
+│   ├── Loader3D.tsx     # Écran de chargement des textures/fichiers 3D
 │   ├── ISS.tsx          # Modèle ISS + orbite (mode globe)
 │   ├── NightSky.tsx     # Scène ciel nocturne (mode sky)
 │   ├── MilkyWay.tsx     # Dôme Voie Lactée (mode sky)
@@ -71,10 +74,10 @@ frontend/src/
 │   ├── EarthGuide.tsx           # Indicateur direction Terre (mode sky)
 │   ├── CompassRose.tsx          # Boussole (mode sky)
 │   ├── LocationMarker.tsx       # Marqueur point d'observation (globe)
-│   ├── SidePanel.tsx    # Panneau latéral (paramètres, étoile sélectionnée)
+│   ├── SidePanel.tsx    # Panneau latéral (paramètres, sélection)
 │   ├── ConstellationSidebar.tsx # Sidebar recherche constellations (globe)
 │   ├── StarTooltip.tsx  # Tooltip étoile survolée (3D overlay)
-│   ├── TimeSlider.tsx   # Contrôle temporel (sélecteur de date/heure)
+│   ├── TimeSlider.tsx   # Curseur temporel et temps réel
 │   └── Effects.tsx      # Post-processing (bloom, etc.)
 │
 ├── stores/              # État global Zustand
@@ -102,7 +105,10 @@ L'application possède deux modes exclusifs, contrôlés par `useSkyStore.viewMo
 
 **Composants actifs :**
 
-- `Globe` — sphère terrestre texturée
+- `Globe` — sphère terrestre avec shader dynamique jour/nuit
+- `SolarSystem` — rendu 3D des orbites et des mouvements planétaires
+- `PlanetInfoCard` — UI de détail lors du clic sur une planète
+- `Loader3D` — gestionnaire de preloading des lourdes textures
 - `ISS` — modèle 3D faible-poly de l'ISS avec ligne orbitale
 - `LocationMarker` — marqueur de la ville d'observation
 - `ConstellationSidebar` — barre de recherche/sélection de constellations (HTML)
