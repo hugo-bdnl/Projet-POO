@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import { useRef } from "react";
-import { useFrame } from "@react-three/fiber";
+import { useFrame, type ThreeEvent } from "@react-three/fiber";
 import { useTexture, Line } from "@react-three/drei";
 import { useSkyStore } from "../stores/useSkyStore";
 import { computePlanetPositions } from "../utils/planetaryEphemeris";
@@ -33,7 +33,7 @@ export function SolarSystem() {
     {},
   );
 
-  const handlePointerOver = (e: any, planetId: string, texturePath: string) => {
+  const handlePointerOver = (e: ThreeEvent<PointerEvent>, planetId: string, texturePath: string) => {
     e.stopPropagation();
     document.body.style.cursor = "pointer";
     // Delay preloading by 350ms to prevent downloading on fast sweeps

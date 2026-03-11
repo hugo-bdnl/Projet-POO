@@ -93,19 +93,11 @@ export const useSkyStore = create<SkyState>((set, get) => ({
 
   fetchConstellationExtras: async (patternHipIds) => {
     const { currentLat, currentLon, timestamp, stars } = get();
-    console.log("[DEBUG] fetchConstellationExtras called", {
-      patternHipIds: [...patternHipIds],
-      currentLat,
-      currentLon,
-      starsCount: stars.length,
-    });
-
     if (
       currentLat === null ||
       currentLon === null ||
       patternHipIds.size === 0
     ) {
-      console.log("[DEBUG] Early return: missing lat/lon or hipIds");
       return;
     }
 
@@ -116,12 +108,7 @@ export const useSkyStore = create<SkyState>((set, get) => ({
     const missingHipIds = [...patternHipIds].filter(
       (id) => !alreadyLoaded.has(id),
     );
-    console.log("[DEBUG] Missing hip_ids:", missingHipIds);
-
     if (missingHipIds.length === 0) {
-      console.log(
-        "[DEBUG] All pattern stars already in stars[], no extras needed",
-      );
       return;
     }
 
@@ -132,21 +119,11 @@ export const useSkyStore = create<SkyState>((set, get) => ({
         timestamp,
         8,
       );
-      console.log(
-        "[DEBUG] Fetched with mag_limit=8:",
-        allBright.length,
-        "stars",
-      );
-
       const extras = allBright.filter(
         (s) =>
           s.hip_id !== null &&
           patternHipIds.has(s.hip_id) &&
           !alreadyLoaded.has(s.hip_id),
-      );
-      console.log(
-        "[DEBUG] Extras found:",
-        extras.map((s) => ({ hip_id: s.hip_id, mag: s.magnitude })),
       );
       set({ constellationExtraStars: extras });
     } catch (err) {
