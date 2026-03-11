@@ -121,6 +121,10 @@ function App() {
     showAzAltGrid,
     toggleAzAltGrid,
     error: skyError,
+    isSystemRotating,
+    toggleSystemRotation,
+    systemRotationSpeed,
+    setSystemRotationSpeed,
   } = useSkyStore();
   const { error: constellationError } = useConstellationStore();
   const { error: obsError } = useObservationStore();
@@ -213,6 +217,119 @@ function App() {
       {/* Contrôle Temporel - Ciel Nocturne */}
       <TimeSlider />
 
+      {/* Bouton Play/Pause pour le mode Système Solaire */}
+      {viewMode === "system" && (
+        <div
+          style={{
+            position: "absolute",
+            top: "1.5rem",
+            right: "2rem",
+            zIndex: 100,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "flex-end",
+            gap: "10px",
+          }}
+        >
+          {/* Conteneur principal (Play/Pause + Vitesse) */}
+          <div
+            style={{
+              background: "rgba(10, 10, 10, 0.85)",
+              border: "1px solid #00f0ff",
+              borderRadius: "15px",
+              padding: "10px 15px",
+              display: "flex",
+              flexDirection: "column",
+              gap: "12px",
+              boxShadow: "0 0 20px rgba(0,255,255,0.15)",
+              backdropFilter: "blur(5px)",
+            }}
+          >
+            {/* Ligne 1 : Bouton Play/Pause */}
+            <button
+              onClick={toggleSystemRotation}
+              style={{
+                fontSize: "1rem",
+                padding: "8px 20px",
+                borderRadius: "25px",
+                background: isSystemRotating ? "rgba(0, 240, 255, 0.15)" : "transparent",
+                border: "1px solid",
+                borderColor: isSystemRotating ? "rgba(0, 240, 255, 0.5)" : "#333",
+                color: "white",
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "8px",
+                fontWeight: "bold",
+                transition: "all 0.2s ease",
+                width: "100%",
+              }}
+              onMouseOver={(e) => {
+                e.currentTarget.style.background = "rgba(0, 240, 255, 0.3)";
+              }}
+              onMouseOut={(e) => {
+                e.currentTarget.style.background = isSystemRotating
+                  ? "rgba(0, 240, 255, 0.15)"
+                  : "transparent";
+              }}
+            >
+              {isSystemRotating ? "⏸ PAUSE" : "▶ PLAY"}
+            </button>
+
+            {/* Ligne 2 : Contrôle de Vitesse */}
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: "5px",
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  color: "#00f0ff",
+                  fontSize: "0.85rem",
+                  fontWeight: "bold",
+                  fontFamily: "monospace",
+                }}
+              >
+                <span>VITESSE</span>
+                <span>{systemRotationSpeed} j/s</span>
+              </div>
+              <input
+                type="range"
+                min="1"
+                max="365"
+                step="1"
+                value={systemRotationSpeed}
+                onChange={(e) => setSystemRotationSpeed(Number(e.target.value))}
+                disabled={!isSystemRotating}
+                style={{
+                  width: "200px",
+                  cursor: isSystemRotating ? "pointer" : "not-allowed",
+                  accentColor: "#00f0ff",
+                  opacity: isSystemRotating ? 1 : 0.5,
+                }}
+              />
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  color: "#666",
+                  fontSize: "0.75rem",
+                  marginTop: "2px",
+                }}
+              >
+                <span>1 j/s</span>
+                <span>365 j/s</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       <Canvas
         camera={{ position: [0, 0, 3], fov: 50, far: 10000 }}
         dpr={[1, 1.5]}
@@ -260,7 +377,7 @@ function App() {
           minDistance={
             viewMode === "globe"
               ? (PLANETS_METADATA[selectedPlanet || "earth"]?.visualSize || 1) *
-                1.5
+              1.5
               : viewMode === "sky"
                 ? 0.05
                 : 6
@@ -268,7 +385,7 @@ function App() {
           maxDistance={
             viewMode === "globe"
               ? (PLANETS_METADATA[selectedPlanet || "earth"]?.visualSize || 1) *
-                10.0
+              10.0
               : viewMode === "sky"
                 ? Infinity
                 : 500

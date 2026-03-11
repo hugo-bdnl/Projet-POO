@@ -51,6 +51,10 @@ interface SkyState {
     mode: ViewMode,
     planet?: import("../types/planets").PlanetId | null,
   ) => void;
+  isSystemRotating: boolean;
+  toggleSystemRotation: () => void;
+  systemRotationSpeed: number; // En jours par seconde
+  setSystemRotationSpeed: (speed: number) => void;
 }
 
 export const useSkyStore = create<SkyState>((set, get) => ({
@@ -68,6 +72,11 @@ export const useSkyStore = create<SkyState>((set, get) => ({
   currentLat: null,
   currentLon: null,
   isTransitioning: false,
+  isSystemRotating: true,
+  systemRotationSpeed: 15,
+
+  toggleSystemRotation: () => set((s) => ({ isSystemRotating: !s.isSystemRotating })),
+  setSystemRotationSpeed: (speed) => set({ systemRotationSpeed: speed }),
 
   setViewMode: (mode) => set({ viewMode: mode }),
   setTimestamp: (iso) => set({ timestamp: iso }),

@@ -12,14 +12,14 @@ import { PLANETS_METADATA } from "../types/planets";
  * aux positions réelles calculées via VSOP87B (astronomia).
  */
 export function SolarSystem() {
-  const { timestamp } = useSkyStore();
+  const { timestamp, isSystemRotating, systemRotationSpeed } = useSkyStore();
 
-  // Optimisation: Memoize pour éviter de recalculer les 128 points d'orbite à chaque render
+  // Optimisation: Memorize pour éviter de recalculer les 128 points d'orbite à chaque render
   const calculationDate = useMemo(() => timestamp ? new Date(timestamp) : new Date(), [timestamp]);
   const animatedDateRef = useRef(calculationDate.getTime());
 
   const planetPositions = useMemo(() => computePlanetPositions(calculationDate), [calculationDate]);
-  
+
   useEffect(() => {
     animatedDateRef.current = calculationDate.getTime();
   }, [calculationDate]);
@@ -73,8 +73,10 @@ export function SolarSystem() {
     }
 
     // Avancer le temps pour l'animation (ex: 15 jours par seconde)
-    const SIMULATION_SPEED = 15 * 86400 * 1000;
-    animatedDateRef.current += delta * SIMULATION_SPEED;
+    if (isSystemRotating) {
+      const SIMULATION_SPEED = systemRotationSpeed * 86400 * 1000;
+      animatedDateRef.current += delta * SIMULATION_SPEED;
+    }
 
     // Calcul optimisé (skipOrbits = true) pour l'animation
     const newPositions = computePlanetPositions(new Date(animatedDateRef.current), true);
@@ -103,7 +105,9 @@ export function SolarSystem() {
         }
 
         // Animation de rotation (spin) sur eux-mêmes
-        mesh.rotation.y += delta * (id === "sun" ? 0.05 : 0.5);
+        if (isSystemRotating) {
+          mesh.rotation.y += delta * (id === "sun" ? 0.05 : 0.5);
+        }
       }
     }
   });
