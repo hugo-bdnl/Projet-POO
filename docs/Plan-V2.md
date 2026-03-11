@@ -401,7 +401,8 @@ Le démarrage de l'application en mode "Système Solaire" requiert le chargement
 - [x] Le réglage de bugs du terminateur
 - [x] L'ajustement des orbites (orbites au niveau du soleil)
 - [x] L'animation sur le zoom des planètes (hover scaling)
-- [ ] Implémenter une représentation 3D de la ceinture d'astéroïdes réelle entre Mars et Jupiter (uniquement en mode système)
+- [x] Implémenter une représentation 3D de la ceinture d'astéroïdes réelle entre Mars et Jupiter (uniquement en mode système)
+- [ ] Implémenter une représentation 3D de la ceinture de Kuiper (uniquement en mode système)
 
 **Livrable** :
 - Une simulation du système solaire fluide, interactive, et performante.
@@ -425,7 +426,6 @@ Le démarrage de l'application en mode "Système Solaire" requiert le chargement
 
 ---
 
-**Ce plan donne une V2 autonome, dérivée de la V1 déployée, qui transforme l'app en un observatoire solaire interactif complet. 🪐**
 ### SEMAINE V2-7 : PLANÈTES EN MODE CIEL NOCTURNE
 
 **Objectif** : Planètes visibles comme objets brillants dans la vue ciel

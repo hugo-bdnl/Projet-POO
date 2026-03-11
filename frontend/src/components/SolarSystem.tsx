@@ -5,6 +5,7 @@ import { useTexture, Line } from "@react-three/drei";
 import { useSkyStore } from "../stores/useSkyStore";
 import { computePlanetPositions } from "../utils/planetaryEphemeris";
 import { PLANETS_METADATA } from "../types/planets";
+import { AsteroidBelt } from "./AsteroidBelt";
 
 /**
  * Composant principal de la vue Système Solaire.
@@ -158,6 +159,10 @@ export function SolarSystem() {
         <sphereGeometry args={[PLANETS_METADATA.sun.visualSize, 64, 64]} />
         <meshBasicMaterial ref={sunMaterialRef} map={sunTexture} />
       </mesh>
+
+      {/* Ceinture d'astéroïdes */}
+      <AsteroidBelt />
+
       {/* 3. Les Planètes */}
       {Array.from(planetPositions.values()).map((p) => {
         if (p.id === "sun") return null;

@@ -90,7 +90,7 @@ function sphericalToVector3(
  * On utilise une échelle compressée ou logarithmique pour l'affichage
  * du système solaire (mode "solar") pour que Jupiter et Neptune soient visibles.
  */
-function compressRadius(au: number): number {
+export function compressRadius(au: number): number {
   if (au === 0) return 0;
   // Compressons les distances de façon artificielle pour la vue 3D
   // Le Soleil ayant un rayon de 12 unités, l'orbite 0 commence au-delà.
