@@ -40,3 +40,6 @@ desktop.ini
 
 # ===== Database =====
 backend/data/*.db
+
+# ===== Claude Code =====
+.claude/settings.local.json
