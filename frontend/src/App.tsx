@@ -21,6 +21,26 @@ import { useObservationStore } from "./stores/useObservationStore";
 import * as THREE from "three";
 import "./App.css";
 
+/** Détecte si le navigateur utilise un renderer logiciel (pas d'accélération GPU). */
+function detectSoftwareRenderer(): { isSoftware: boolean; renderer: string } {
+  try {
+    const canvas = document.createElement("canvas");
+    const gl =
+      (canvas.getContext("webgl") as WebGLRenderingContext | null) ||
+      (canvas.getContext("experimental-webgl") as WebGLRenderingContext | null);
+    if (!gl) return { isSoftware: true, renderer: "WebGL indisponible" };
+
+    const dbg = gl.getExtension("WEBGL_debug_renderer_info");
+    if (!dbg) return { isSoftware: false, renderer: "inconnu" };
+
+    const renderer = gl.getParameter(dbg.UNMASKED_RENDERER_WEBGL) as string;
+    const isSoftware = /swiftshader|llvmpipe|software|microsoft basic render/i.test(renderer);
+    return { isSoftware, renderer };
+  } catch {
+    return { isSoftware: false, renderer: "inconnu" };
+  }
+}
+
 /**
  * Composant interne (dans le Canvas) qui gère les transitions de caméra
  * entre les modes globe et ciel. Le lerp s'arrête après 1.5s
@@ -132,7 +152,14 @@ function App() {
   const { error: obsError } = useObservationStore();
 
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [gpuWarning, setGpuWarning] = useState<string | null>(null);
   const controlsRef = useRef<OrbitControlsImpl>(null);
+
+  // Détection accélération GPU au montage
+  useEffect(() => {
+    const { isSoftware, renderer } = detectSoftwareRenderer();
+    if (isSoftware) setGpuWarning(renderer);
+  }, []);
 
   // Gestion des erreurs via Toast
   useEffect(() => {
@@ -166,6 +193,63 @@ function App() {
 
   return (
     <div id="canvas-container">
+      {/* Avertissement accélération GPU désactivée */}
+      {gpuWarning && (
+        <div style={{
+          position: "fixed",
+          inset: 0,
+          background: "rgba(0,0,0,0.75)",
+          backdropFilter: "blur(6px)",
+          zIndex: 9999,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}>
+          <div style={{
+            background: "rgba(10, 15, 25, 0.95)",
+            border: "1px solid rgba(255, 160, 0, 0.6)",
+            borderRadius: "16px",
+            padding: "32px",
+            maxWidth: "420px",
+            width: "90%",
+            boxShadow: "0 0 40px rgba(255, 160, 0, 0.2)",
+            fontFamily: "system-ui, sans-serif",
+            color: "white",
+            textAlign: "center",
+          }}>
+            <div style={{ fontSize: "2.5rem", marginBottom: "12px" }}>⚠️</div>
+            <h2 style={{ margin: "0 0 10px", color: "#ffa000", fontSize: "1.2rem" }}>
+              Accélération GPU désactivée
+            </h2>
+            <p style={{ color: "#ccc", fontSize: "0.9rem", lineHeight: "1.6", margin: "0 0 8px" }}>
+              Renderer détecté : <code style={{ color: "#ffa000", fontSize: "0.8rem" }}>{gpuWarning}</code>
+            </p>
+            <p style={{ color: "#999", fontSize: "0.85rem", lineHeight: "1.6", margin: "0 0 24px" }}>
+              Cette application utilise WebGL intensivement. Sans accélération matérielle,
+              les performances seront très dégradées.
+              <br /><br />
+              Active l'accélération matérielle dans les paramètres de ton navigateur
+              (Paramètres → Système → Accélération matérielle).
+            </p>
+            <button
+              onClick={() => setGpuWarning(null)}
+              style={{
+                background: "rgba(255, 160, 0, 0.15)",
+                border: "1px solid rgba(255, 160, 0, 0.5)",
+                borderRadius: "25px",
+                color: "#ffa000",
+                padding: "10px 28px",
+                cursor: "pointer",
+                fontSize: "0.9rem",
+                fontWeight: "bold",
+              }}
+            >
+              Continuer quand même
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* HUD top-right en mode sky : Retour Globe + toggle grille */}
       {viewMode === "sky" && (
         <div
