@@ -426,7 +426,175 @@ Le démarrage de l'application en mode "Système Solaire" requiert le chargement
 
 ---
 
-### SEMAINE V2-7 : PLANÈTES EN MODE CIEL NOCTURNE
+### SEMAINE V2-7 : SATELLITES, ROVERS, COUVERTURE ORBITALE & ANNEAUX
+
+**Objectif** : Enrichir les modes Globe et Système avec des objets orbitaux, des données d'exploration et de nouveaux corps planétaires.
+
+---
+
+#### Tâche 7.1 — Satellites naturels en mode Globe
+
+**Description** : Afficher les principales lunes en orbite autour de leur planète lors du clic en mode Globe.
+
+**Lunes à implémenter** :
+- Terre : **Lune** (1 satellite)
+- Jupiter : **Io, Europa, Ganymède, Callisto** (lunes galiléennes)
+- Saturne : **Titan, Rhéa, Dioné, Téthys, Encelade** (5 principaux)
+- Uranus : **Titania, Obéron, Umbriel, Ariel, Miranda** (5 principaux)
+- Neptune : **Triton** (1 principal, orbite rétrograde)
+- Mars : **Phobos, Deimos** (2 satellites)
+
+**Sources de données / calcul des positions** :
+- **Lune terrestre** : module `astronomia/moonposition` — calcul complet selon Meeus, précision ~1 arcmin, 100% frontend
+- **Lunes galiléennes de Jupiter** : module `astronomia/jupitermoons` — positions des 4 lunes galiléennes selon Meeus Ch.44
+- **Autres lunes** : pas de support natif dans `astronomia`. Deux options :
+  - Option A (recommandée) : **positions statiques actualisées** depuis [JPL Horizons](https://ssd.jpl.nasa.gov/horizons/) (`https://ssd.jpl.nasa.gov/api/horizons.api`) — appel API au montage du composant, cache 1h en mémoire
+  - Option B : approximations Kepleriannes codées en dur (éléments orbitaux moyens depuis [NASA NSSDC Planetary Fact Sheets](https://nssdc.gsfc.nasa.gov/planetary/planetfact.html))
+
+**Implémentation** :
+- Nouveau composant `PlanetMoons.tsx` monté uniquement si la planète sélectionnée a des satellites
+- Chaque lune = petite sphère (radius ~0.05–0.2 selon taille réelle) texturée ou colorée
+- Orbite visible (LineLoop en pointillés semi-transparents)
+- Tooltip hover : nom + distance à la planète + période orbitale
+
+**Tâches** :
+- [ ] Implémenter `PlanetMoons.tsx` : rendu générique par planète
+- [ ] Intégrer `astronomia/moonposition` pour la Lune terrestre
+- [ ] Intégrer `astronomia/jupitermoons` pour les 4 lunes galiléennes
+- [ ] Appel JPL Horizons (ou éléments orbitaux statiques) pour les autres satellites
+- [ ] Textures lunes : [Solar System Scope](https://www.solarsystemscope.com/textures/) (Lune, Titan, Io, Europa, Ganymède, Callisto disponibles)
+
+---
+
+#### Tâche 7.2 — Rovers martiens en mode Globe (Mars)
+
+**Description** : Afficher sur le globe de Mars les positions des rovers envoyés, avec panneau d'info et galerie photos.
+
+**Rovers à afficher** :
+| Rover | Agence | Actif | Coordonnées approx. |
+|---|---|---|---|
+| Curiosity | NASA | ✅ Oui (depuis 2012) | ~137.4°E, 4.6°S (Gale Crater) |
+| Perseverance | NASA | ✅ Oui (depuis 2021) | ~77.4°E, 18.4°N (Jezero Crater) |
+| Opportunity | NASA | ❌ 2004–2018 | ~354.5°E, 1.9°S (Endeavour Crater) |
+| Spirit | NASA | ❌ 2004–2010 | ~175.5°E, 14.6°S (Columbia Hills) |
+| Zhurong | CNSA | ❌ 2021–2022 | ~109.9°E, 25.1°N (Utopia Planitia) |
+
+**Données nécessaires et où les trouver** :
+
+1. **Positions GPS des rovers** :
+   - Source authoritative : **NASA NAIF SPICE** (kernels SPK) — complexe à parser
+   - Source accessible : **[NASA Mars Trek](https://trek.nasa.gov/mars/)** — coordonnées lat/lon exportables
+   - Solution pragmatique : **positions statiques codées en dur** (les rovers bougent peu — Curiosity ~700m/jour max), avec une note de la date de dernière mise à jour. Pour Curiosity/Perseverance actifs, mettre à jour depuis le blog NASA Curiosity/Perseverance.
+   - Pour les rovers actifs uniquement : **[NASA InSight/Mars Exploration API](https://api.nasa.gov/)** — pas de position GPS directement, mais les rapports de sol (sol = jour martien) incluent la position
+
+2. **Photos envoyées par les rovers** :
+   - **NASA Mars Rover Photos API** (gratuit, clé API NASA gratuite sur `api.nasa.gov`) :
+     ```
+     GET https://api.nasa.gov/mars-photos/api/v1/rovers/{rover}/latest_photos?api_key=DEMO_KEY
+     GET https://api.nasa.gov/mars-photos/api/v1/rovers/{rover}/photos?sol={sol}&api_key=KEY
+     ```
+   - Rovers supportés : `curiosity`, `opportunity`, `spirit`, `perseverance`
+   - Retourne : URL image, caméra utilisée, sol martien, date terrienne
+   - Clé DEMO_KEY : 30 req/heure sans inscription, suffisant pour un usage normal
+   - **À stocker dans `.env`** : `VITE_NASA_API_KEY=...`
+
+**Implémentation** :
+- Nouveau composant `MarsRovers.tsx`, monté uniquement quand `selectedPlanet === "mars"`
+- Chaque rover = petit marker 3D (icône robot stylisée ou simple `BoxGeometry`) à la lat/lon convertie en coordonnées sphériques
+- `onClick` → panneau InfoCard : nom du rover, mission, dates actives, dernière photo (fetch NASA API)
+- Rovers inactifs : marker grisé/atténué
+- **Clé API NASA** : à ajouter dans `backend/.env` et appeler via le backend pour ne pas exposer la clé côté client, OU utiliser `VITE_NASA_API_KEY` en acceptant l'exposition (clé gratuite, rate-limitée, acceptable)
+
+**Tâches** :
+- [ ] Créer `MarsRovers.tsx` avec positions statiques initiales
+- [ ] Ajouter endpoint backend `GET /api/rovers/{rover}/photos` (proxy NASA API pour masquer la clé)
+- [ ] Créer la modale/panneau InfoCard rover avec galerie photos
+- [ ] Conversion lat/lon → coordonnées 3D sur sphère Mars
+- [ ] Style distinctif rovers actifs vs inactifs
+
+---
+
+#### Tâche 7.3 — Couverture satellitaire en mode Globe (Terre uniquement)
+
+**Description** : Visualisation des satellites en orbite autour de la Terre en temps réel. Composant activable/désactivable, disponible uniquement en mode Globe sur la Terre.
+
+**Données nécessaires** :
+
+1. **TLE (Two-Line Elements)** — format standard de description d'orbite satellite :
+   - Source : **[CelesTrak](https://celestrak.org/)** (gratuit, pas d'auth requise)
+   - Endpoints pertinents :
+     ```
+     # Tous les satellites actifs (~6000 entrées)
+     https://celestrak.org/SOCRATES/query.php (complexe)
+
+     # Par catégorie (recommandé — moins de données) :
+     https://celestrak.org/SATCAT/tle.txt                  # tous actifs
+     https://celestrak.org/supplemental/tle/starlink.txt   # Starlink (~5000)
+     https://celestrak.org/TLE/table.php?GROUP=active&FORMAT=tle  # actifs groupés
+
+     # Format JSON (plus pratique) :
+     https://celestrak.org/SATCAT/records.php?FORMAT=json
+     https://celestrak.org/TLE/format-new.php  (GP format JSON)
+     ```
+   - Les TLEs sont valides **~7–14 jours** → à re-fetcher régulièrement (cache backend recommandé)
+   - Recommandation : récupérer une **sélection thématique** plutôt que tout (ex: Starlink, GPS, météo, ISS+environnement proche)
+
+2. **Calcul des positions** :
+   - **`satellite.js`** (SGP4 propagator) — **déjà dans le stack** (utilisé pour l'ISS)
+   - Calcul 100% frontend, aucun appel API en temps réel
+   - `satellite.propagate(satrec, date)` → position ECI → convertir en lat/lon/alt → coordonnées 3D sphériques
+   - Performance : SGP4 pour 500 satellites = ~2ms/frame → **throttler à 1 calcul/seconde** (positions ne changent pas visiblement plus vite)
+
+**Architecture recommandée** :
+- Nouveau composant `SatelliteCoverage.tsx`, monté si `selectedPlanet === "earth"` et toggle activé
+- Bouton toggle dans le HUD Globe : `[⬡ SATELLITES]`
+- Au montage : fetch TLEs depuis CelesTrak (via backend pour CORS), parse avec `satellite.js`, `satrec` stocké en mémoire
+- `useFrame` throttlé (1×/s) : propagation SGP4 → mise à jour `instancedMesh` (points/sphères minuscules)
+- `instancedMesh` pour la performance (1000–5000 satellites simultanés)
+- Code couleur par catégorie : Starlink (bleu), GPS (vert), météo (jaune), ISS+zone (cyan), débris (rouge)
+- Tooltip hover : nom du satellite, altitude, vitesse, inclinaison
+
+**Tâches** :
+- [ ] Endpoint backend `GET /api/satellites/tle?group={group}` — proxy CelesTrak + cache Redis/SQLite 12h
+- [ ] Créer `SatelliteCoverage.tsx` avec `instancedMesh` pour perf
+- [ ] Intégrer propagation SGP4 via `satellite.js` (déjà installé)
+- [ ] Toggle UI dans le HUD Globe (bouton activable/désactivable)
+- [ ] Throttle calcul positions à 1×/s avec scratch variables (règles R3F performance)
+- [ ] Sélection de groupes affichables (Starlink, GPS, ISS...)
+- [ ] Panneau infos satellite au clic
+
+---
+
+#### Tâche 7.4 — Anneaux de Jupiter, Uranus et Neptune en mode Système
+
+**Description** : Ajouter les anneaux planétaires manquants. Saturne en dispose déjà ; les 3 autres géantes ont des anneaux moins visibles mais réels.
+
+| Planète | Anneaux | Caractéristiques visuelles |
+|---|---|---|
+| **Jupiter** | Anneau principal + halo + gossamer | Très ténus, semi-transparents, brun-rougeâtre |
+| **Uranus** | 13 anneaux distincts (ε, δ, γ…) | Fins, sombres, inclinés à 97° (axe couché) |
+| **Neptune** | 5 arches/anneaux (Adams, Le Verrier…) | Très ténus, légèrement bleutés |
+
+**Sources textures** :
+- [Solar System Scope](https://www.solarsystemscope.com/textures/) : ring maps disponibles pour Uranus et Neptune
+- [NASA JPL Photojournal](https://photojournal.jpl.nasa.gov/) : images Voyager 2 des anneaux d'Uranus et Neptune
+- Pour Jupiter : texture procédurale semi-transparente acceptable (anneaux quasi-invisibles à l'œil)
+
+**Implémentation** :
+- Réutiliser la logique de `SaturnRings.tsx` (ring plane avec texture + `DoubleSide` + `alphaMap`)
+- Particularité Uranus : incliner le ring plane à ~97° (axe de rotation couché)
+- Particularité Neptune : arches d'intensité variable → possible via texture avec zones plus denses
+- Intégrer les rings dans `SolarSystem.tsx` aux conditions `planetId === "jupiter"` etc.
+
+**Tâches** :
+- [ ] Télécharger/créer textures ring maps pour Jupiter, Uranus, Neptune
+- [ ] Créer ou étendre `PlanetRings.tsx` en composant générique (remplace `SaturnRings.tsx`)
+- [ ] Appliquer l'inclinaison correcte pour Uranus
+- [ ] Tester la transparence et le rendu en mode système
+
+---
+
+### SEMAINE V2-8 : PLANÈTES EN MODE CIEL NOCTURNE
 
 **Objectif** : Planètes visibles comme objets brillants dans la vue ciel
 
@@ -443,7 +611,7 @@ Le démarrage de l'application en mode "Système Solaire" requiert le chargement
 - Planètes visibles dans ciel nocturne à leur position réelle depuis le point d'obs sélectionné
 
 ---
-### SEMAINE V2-8 : POLISH, OPTIMISATIONS & TESTS
+### SEMAINE V2-9 : POLISH, OPTIMISATIONS & TESTS
 
 **Objectif** : Qualité production, performances vérifiées, UX cohérente
 
