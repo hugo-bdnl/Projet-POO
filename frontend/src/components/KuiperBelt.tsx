@@ -11,9 +11,16 @@ function KuiperHud({ radius }: { radius: number }) {
   const markerRef = useRef<THREE.Group>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const lineRef = useRef<SVGPolylineElement>(null);
+  const anchorDotRef = useRef<SVGCircleElement>(null);
   const [isOpen, setIsOpen] = useState(false);
 
   const scratchVec = useMemo(() => new THREE.Vector3(), []);
+
+  // Panel fixed position in screen space
+  const PANEL_LEFT = 20;
+  const PANEL_TOP = 50;
+  const PANEL_WIDTH = 320;
+  const PANEL_HEIGHT_HALF = 150; // demi-hauteur estimée du panneau
 
   useFrame(({ camera, size }) => {
     if (!markerRef.current) return;
@@ -33,31 +40,31 @@ function KuiperHud({ radius }: { radius: number }) {
     const x = (scratchVec.x * 0.5 + 0.5) * size.width;
     const y = (-(scratchVec.y) * 0.5 + 0.5) * size.height;
 
-    // Anchor coordinates of the drawn line relative to the screen (top-left)
-    const PANEL_FIXED_X = 50; 
-    const PANEL_FIXED_Y = 280; 
-
-    // Conversion from screen space to local Html space
-    const targetX = PANEL_FIXED_X - x;
-    const targetY = PANEL_FIXED_Y - y;
-
     if (panelRef.current) {
-      // Dynamic inverse translation
-      const panelTopLeftX = 20 - x;
-      const panelTopLeftY = 70 - y;
-      panelRef.current.style.transform = `translate(${panelTopLeftX}px, ${panelTopLeftY}px)`;
+      panelRef.current.style.transform = `translate(${PANEL_LEFT - x}px, ${PANEL_TOP - y}px)`;
     }
 
     if (lineRef.current) {
-      // Path: anchor point -> straight down to marker's height -> horizontal to marker
-      lineRef.current.setAttribute("points", `${targetX},${targetY} ${targetX},0 0,0`);
-      
-      // Hide if behind the camera
-      if (scratchVec.z > 1) {
-          lineRef.current.style.opacity = "0";
-      } else {
-          lineRef.current.style.opacity = "1";
+      // Ancre côté panneau : milieu du bord droit du panneau
+      const panelRightX = PANEL_LEFT + PANEL_WIDTH - x;
+      const elbowX = panelRightX + 24; // coude vertical entre les deux horizontaux
+      const panelMidY = PANEL_TOP + PANEL_HEIGHT_HALF - y;
+
+      // Tracé 3 segments : marker → horizontal → vertical → horizontal → milieu panneau
+      lineRef.current.setAttribute(
+        "points",
+        `${panelRightX},${panelMidY} ${elbowX},${panelMidY} ${elbowX},0 0,0`
+      );
+
+      if (anchorDotRef.current) {
+        anchorDotRef.current.setAttribute("cx", String(panelRightX));
+        anchorDotRef.current.setAttribute("cy", String(panelMidY));
       }
+
+      // Masquer si derrière la caméra, ou si le coude dépasse le marker (zoom trop proche)
+      const hide = scratchVec.z > 1 || elbowX > 0;
+      lineRef.current.style.opacity = hide ? "0" : "1";
+      if (anchorDotRef.current) anchorDotRef.current.style.opacity = hide ? "0" : "1";
     }
   });
 
@@ -104,6 +111,7 @@ function KuiperHud({ radius }: { radius: number }) {
                   strokeWidth="1.5"
                 />
                 <circle cx="0" cy="0" r="3" fill="#00f0ff" />
+                <circle ref={anchorDotRef} cx="0" cy="0" r="3" fill="#00f0ff" />
               </svg>
 
               {/* Le Panneau InfoCard */}
@@ -183,22 +191,24 @@ function KuiperHud({ radius }: { radius: number }) {
               }}
               style={{
                 position: 'absolute',
-                left: "15px",
-                top: "-15px",
+                left: "10px",
+                top: "-14px",
                 background: "rgba(10, 15, 25, 0.6)",
                 backdropFilter: "blur(4px)",
-                border: "1px solid rgba(0, 240, 255, 0.3)",
+                border: "1px solid rgba(0, 240, 255, 0.35)",
                 color: "#00f0ff",
-                padding: "5px 10px",
-                borderRadius: "20px",
+                width: "26px",
+                height: "26px",
+                borderRadius: "50%",
                 cursor: "pointer",
-                fontSize: "0.8rem",
-                fontWeight: "bold",
-                whiteSpace: "nowrap",
+                fontSize: "1rem",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
                 pointerEvents: 'auto'
               }}
             >
-              INFO
+              ✧
             </div>
           )}
         </div>
@@ -291,9 +301,10 @@ export function KuiperBelt() {
         args={[undefined as any, undefined as any, KUIPER_OBJECT_COUNT]}
       >
         <icosahedronGeometry args={[0.5, 0]} />
-        <meshStandardMaterial 
-          color="#8ea3b5" // Grayish-blue icy rock color
-          roughness={0.9} 
+        <meshStandardMaterial
+          color="#ff7070ff" // Grayish-blue icy rock color
+          roughness={0.9}
+          customProgramCacheKey={() => "kuiper-belt-v1"}
           onBeforeCompile={(shader) => {
             shader.vertexShader = shader.vertexShader.replace(
               '#include <begin_vertex>',
