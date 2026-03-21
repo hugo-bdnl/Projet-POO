@@ -458,11 +458,11 @@ Le démarrage de l'application en mode "Système Solaire" requiert le chargement
 - Tooltip hover : nom + distance à la planète + période orbitale
 
 **Tâches** :
-- [ ] Implémenter `PlanetMoons.tsx` : rendu générique par planète
-- [ ] Intégrer `astronomia/moonposition` pour la Lune terrestre
-- [ ] Intégrer `astronomia/jupitermoons` pour les 4 lunes galiléennes
-- [ ] Appel JPL Horizons (ou éléments orbitaux statiques) pour les autres satellites
-- [ ] Textures lunes : [Solar System Scope](https://www.solarsystemscope.com/textures/) (Lune, Titan, Io, Europa, Ganymède, Callisto disponibles)
+- [x] Implémenter `PlanetMoons.tsx` : rendu générique par planète
+- [x] Intégrer `astronomia/moonposition` pour la Lune terrestre
+- [x] Intégrer `astronomia/jupitermoons` pour les 4 lunes galiléennes
+- [x] Appel JPL Horizons (ou éléments orbitaux statiques) pour les autres satellites
+- [x] Textures lunes : [Solar System Scope](https://www.solarsystemscope.com/textures/) (Lune, Titan, Io, Europa, Ganymède, Callisto disponibles)
 
 ---
 
