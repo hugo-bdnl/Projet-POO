@@ -20,6 +20,9 @@ import neptuneData from "astronomia/data/vsop87Bneptune";
 
 import type { PlanetId, PlanetPosition } from "../types/planets";
 
+/** Epoch J2000.0 en millisecondes (1er janvier 2000 12:00 TT) */
+export const J2000_MS = 946728000000;
+
 // Instanciation des objets Planètes (Algorithmes de Meeus)
 const mercury = new planetposition.Planet(mercuryData.default || mercuryData);
 const venus = new planetposition.Planet(venusData.default || venusData);

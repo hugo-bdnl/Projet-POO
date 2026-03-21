@@ -8,6 +8,8 @@ import { computePlanetPositions } from "../utils/planetaryEphemeris";
 import { PLANETS_METADATA } from "../types/planets";
 import { AsteroidBelt } from "./AsteroidBelt";
 import { KuiperBelt } from "./KuiperBelt";
+import { getMoonsForPlanet } from "../types/moons";
+import type { PlanetId } from "../types/planets";
 
 /**
  * Composant principal de la vue Système Solaire.
@@ -52,6 +54,15 @@ export function SolarSystem() {
       // Cela supprime le parasite visuel (l'écran de chargement qui s'affichait au survol)
       const img = new Image();
       img.src = texturePath;
+
+      // Préchargement furtif des textures de lunes (même approche que la planète)
+      // new Image() alimente le cache navigateur sans réveiller THREE.DefaultLoadingManager
+      // → pas d'écran de chargement parasite au survol
+      const moons = getMoonsForPlanet(planetId as PlanetId);
+      moons.forEach((moon) => {
+        const moonImg = new Image();
+        moonImg.src = moon.texturePath;
+      });
     }, 350);
   };
 

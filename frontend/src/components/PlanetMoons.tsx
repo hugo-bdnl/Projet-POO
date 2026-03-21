@@ -5,11 +5,9 @@ import { useSkyStore } from "../stores/useSkyStore";
 import { PLANETS_METADATA } from "../types/planets";
 import { getMoonsForPlanet, type MoonData } from "../types/moons";
 import type { PlanetId } from "../types/planets";
+import { J2000_MS } from "../utils/planetaryEphemeris";
 
 // ─── Constantes ────────────────────────────────────────────────────────────────
-
-/** Epoch J2000 en millisecondes (1er janvier 2000 12:00 TT) */
-const J2000_MS = 946728000000;
 
 /** Points sur la courbe de l'orbite */
 const ORBIT_SEGMENTS = 64;
@@ -46,8 +44,7 @@ function keplerAngle(periodDays: number, timestampMs: number): number {
 /** Formate une distance en km de façon lisible */
 function formatDistance(km: number): string {
   if (km >= 1_000_000) return `${(km / 1_000_000).toFixed(2)} M km`;
-  if (km >= 1_000) return `${Math.round(km / 1_000)} 000 km`;
-  return `${km} km`;
+  return `${km.toLocaleString("fr-FR")} km`;
 }
 
 // ─── Points d'orbite (cercle dans le plan XZ) ─────────────────────────────────
@@ -120,12 +117,12 @@ function MoonTooltip({ moon }: TooltipProps) {
 
 interface MoonOrbitProps {
   moon: MoonData;
+  texture: THREE.Texture;
   planetRadiusKm: number;
   timestampMs: number;
 }
 
-function MoonOrbit({ moon, planetRadiusKm, timestampMs }: MoonOrbitProps) {
-  const texture = useTexture(moon.texturePath);
+function MoonOrbit({ moon, texture, planetRadiusKm, timestampMs }: MoonOrbitProps) {
   const [hovered, setHovered] = useState(false);
 
   const orbitR = useMemo(
@@ -146,8 +143,11 @@ function MoonOrbit({ moon, planetRadiusKm, timestampMs }: MoonOrbitProps) {
     return [Math.cos(angle) * orbitR, 0, Math.sin(angle) * orbitR];
   }, [moon.periodDays, timestampMs, orbitR]);
 
-  // Inclinaison du plan orbital (rotation autour de X)
-  const inclinationRad = THREE.MathUtils.degToRad(moon.inclination);
+  // Inclinaison du plan orbital — constante pour toute la durée de vie du composant
+  const inclinationRad = useMemo(
+    () => THREE.MathUtils.degToRad(moon.inclination),
+    [moon.inclination],
+  );
 
   return (
     <group rotation={[inclinationRad, 0, 0]}>
@@ -191,10 +191,21 @@ interface PlanetMoonsProps {
 
 export function PlanetMoons({ planetId }: PlanetMoonsProps) {
   const timestamp = useSkyStore((s) => s.timestamp);
-  const timestampMs = timestamp ? new Date(timestamp).getTime() : Date.now();
 
   const moons = useMemo(() => getMoonsForPlanet(planetId), [planetId]);
   const planetRadiusKm = PLANETS_METADATA[planetId].radiusKm;
+
+  // Batch : toutes les textures du groupe de lunes chargées en parallèle (pas de waterfall Suspense)
+  const textureRecord = useMemo(
+    () => Object.fromEntries(moons.map((m) => [m.id, m.texturePath])),
+    [moons],
+  );
+  const textures = useTexture(textureRecord) as Record<string, THREE.Texture>;
+
+  const timestampMs = useMemo(
+    () => (timestamp ? new Date(timestamp).getTime() : Date.now()),
+    [timestamp],
+  );
 
   if (moons.length === 0) return null;
 
@@ -204,6 +215,7 @@ export function PlanetMoons({ planetId }: PlanetMoonsProps) {
         <MoonOrbit
           key={moon.id}
           moon={moon}
+          texture={textures[moon.id]}
           planetRadiusKm={planetRadiusKm}
           timestampMs={timestampMs}
         />
