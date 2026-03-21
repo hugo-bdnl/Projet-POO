@@ -13,6 +13,7 @@ import {
 import CustomShaderMaterial from "three-custom-shader-material";
 import { computeGMST } from "../utils/skyCoords";
 import { ISS } from "./ISS";
+import { PlanetMoons } from "./PlanetMoons";
 import { PLANETS_METADATA } from "../types/planets";
 
 export function Globe() {
@@ -206,6 +207,11 @@ export function Globe() {
 
         {/* Tâche 6 : ISS hors du mesh rotatif (disponible que pour la Terre) */}
         {selectedPlanet === "earth" && <ISS />}
+
+        {/* Tâche 7.1 : Satellites naturels — planètes avec moons > 0 */}
+        {PLANETS_METADATA[selectedPlanet].moons > 0 && (
+          <PlanetMoons planetId={selectedPlanet} />
+        )}
       </group>
     </>
   );
