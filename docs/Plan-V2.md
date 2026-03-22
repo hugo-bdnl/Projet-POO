@@ -468,7 +468,7 @@ Le démarrage de l'application en mode "Système Solaire" requiert le chargement
 
 #### Tâche 7.2 — Rovers martiens en mode Globe (Mars)
 
-**Description** : Afficher sur le globe de Mars les positions des rovers envoyés, avec panneau d'info et galerie photos.
+**Description** : Afficher sur le globe de Mars les positions des rovers envoyés, avec panneau d'info et galerie photos.  
 
 **Rovers à afficher** :
 | Rover | Agence | Actif | Coordonnées approx. |
