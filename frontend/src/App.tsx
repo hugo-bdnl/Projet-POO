@@ -14,6 +14,7 @@ import { EarthGuide } from "./components/EarthGuide";
 import { PLANETS_METADATA } from "./types/planets";
 import { SolarSystem } from "./components/SolarSystem";
 import { PlanetInfoCard } from "./components/PlanetInfoCard";
+import { RoverInfoCard } from "./components/RoverInfoCard";
 import { Loader3D } from "./components/Loader3D";
 import { useSkyStore } from "./stores/useSkyStore";
 import { useConstellationStore } from "./stores/useConstellationStore";
@@ -300,6 +301,7 @@ function App() {
       {/* Barre unifiée pour chercher et afficher les constellations en mode globe */}
       <ConstellationSidebar />
       <PlanetInfoCard />
+      <RoverInfoCard />
       {/* Contrôle Temporel - Ciel Nocturne */}
       <TimeSlider />
 

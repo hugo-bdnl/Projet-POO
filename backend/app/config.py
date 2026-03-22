@@ -35,6 +35,9 @@ class Settings(BaseSettings):
     CACHE_TTL_STATIC: int = 86400     # 24h pour les données statiques
     CACHE_MAX_SIZE: int = 512         # Nombre max d'entrées en cache
 
+    # --- APIs externes ---
+    NASA_API_KEY: str = "DEMO_KEY"    # Clé NASA gratuite (30 req/h sans inscription)
+
     # --- Astronomie ---
     DEFAULT_MAG_LIMIT: float = 6.0    # Magnitude limite œil nu
     MAX_STARS_RESPONSE: int = 10000   # Limite de sécurité pour la réponse API

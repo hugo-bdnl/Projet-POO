@@ -42,6 +42,8 @@ interface SkyState {
   setSelectedPlanet: (
     planet: import("../types/planets").PlanetId | null,
   ) => void;
+  selectedRoverId: string | null;
+  setSelectedRoverId: (id: string | null) => void;
   cameraTarget: [number, number, number] | null;
   setCameraTarget: (target: [number, number, number] | null) => void;
   showAzAltGrid: boolean;
@@ -70,6 +72,7 @@ export const useSkyStore = create<SkyState>((set, get) => ({
   hoveredStar: null,
   selectedStar: null,
   selectedPlanet: null,
+  selectedRoverId: null,
   error: null,
   currentLat: null,
   currentLon: null,
@@ -148,7 +151,9 @@ export const useSkyStore = create<SkyState>((set, get) => ({
 
   setHoveredStar: (star) => set({ hoveredStar: star }),
   setSelectedStar: (star) => set({ selectedStar: star }),
-  setSelectedPlanet: (planet) => set({ selectedPlanet: planet }),
+  setSelectedPlanet: (planet) =>
+    set({ selectedPlanet: planet, selectedRoverId: null }),
+  setSelectedRoverId: (id) => set({ selectedRoverId: id }),
 
   cameraTarget: null,
   setCameraTarget: (target) => set({ cameraTarget: target }),

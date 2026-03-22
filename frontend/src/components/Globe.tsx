@@ -14,6 +14,7 @@ import CustomShaderMaterial from "three-custom-shader-material";
 import { computeGMST } from "../utils/skyCoords";
 import { ISS } from "./ISS";
 import { PlanetMoons } from "./PlanetMoons";
+import { MarsRovers } from "./MarsRovers";
 import { PLANETS_METADATA } from "../types/planets";
 
 export function Globe() {
@@ -179,6 +180,9 @@ export function Globe() {
                 timezone={pt.timezone}
               />
             ))}
+
+          {/* Tâche 7.2 : Rovers martiens — uniquement sur Mars */}
+          {selectedPlanet === "mars" && <MarsRovers />}
 
           {/* Tâche 7 : Effet Atmosphère (Glow) */}
           <mesh>
