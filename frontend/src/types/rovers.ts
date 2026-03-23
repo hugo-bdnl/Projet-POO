@@ -59,6 +59,7 @@ export const ROVER_METADATA: Record<string, Omit<RoverMetadata, "id">> = {
       "Rover de taille voiture explorant le cratère Gale depuis 2012. Il a confirmé l'ancienne habitabilité de Mars en détectant des composés organiques et d'anciens lits de rivière.",
     color: "#e8a030",
     galleryUrl: "https://mars.nasa.gov/msl/multimedia/raw-images/",
+    modelPath: "/models/Curiosity.glb",
   },
   perseverance: {
     name: "Perseverance",
@@ -71,6 +72,7 @@ export const ROVER_METADATA: Record<string, Omit<RoverMetadata, "id">> = {
       "Le rover le plus avancé sur Mars. Il collecte des échantillons de roche pour un futur retour sur Terre et a déployé l'hélicoptère Ingenuity — le premier vol motorisé sur une autre planète.",
     color: "#60c8ff",
     galleryUrl: "https://mars.nasa.gov/mars2020/multimedia/raw-images/",
+    modelPath: "/models/Perseverance.glb",
   },
   opportunity: {
     name: "Opportunity",
@@ -83,6 +85,7 @@ export const ROVER_METADATA: Record<string, Omit<RoverMetadata, "id">> = {
       "Prévu pour 90 sols, Opportunity a opéré pendant 15 ans et parcouru 45 km — un record absolu. Le contact fut définitivement perdu après une tempête de poussière planétaire en 2018.",
     color: "#cc8844",
     galleryUrl: "https://mars.nasa.gov/mer/gallery/all/opportunity.html",
+    modelPath: "/models/Spirit_and_Opportunity.glb",
   },
   spirit: {
     name: "Spirit",
@@ -95,6 +98,7 @@ export const ROVER_METADATA: Record<string, Omit<RoverMetadata, "id">> = {
       "Jumeau d'Opportunity, Spirit s'est immobilisé dans du sol mou en 2009. Sans pouvoir se repositionner pour profiter du soleil, il n'a pas survécu à l'hiver martien.",
     color: "#cc8844",
     galleryUrl: "https://mars.nasa.gov/mer/gallery/all/spirit.html",
+    modelPath: "/models/Spirit_and_Opportunity.glb",
   },
   zhurong: {
     name: "Zhurong",
@@ -107,6 +111,7 @@ export const ROVER_METADATA: Record<string, Omit<RoverMetadata, "id">> = {
       "Premier rover martien chinois. En hibernation depuis mai 2022, il n'a pas pu se réveiller comme prévu après l'hiver martien. Son état actuel reste incertain.",
     color: "#cc4444",
     galleryUrl: null,
+    // Pas de modèle 3D disponible gratuitement
   },
 };
 

@@ -1,5 +1,28 @@
 # Plan V2 : Système Solaire Temps Réel & Terminateur Jour/Nuit
 
+---
+
+## Status de développement
+
+**V2-7 (LUNES & ROVERS)** — ✅ **COMPLÉTÉ** (23 mars 2026)
+
+- ✅ **Lunes** : 20+ lunes orbitant les planètes gazeuses + Terre
+  - Composant `PlanetMoons.tsx` — orbites keplériennes avec inclinaison
+  - Positions calculées keplerien ou via `astronomia` pour Lune/Io/Europa/etc
+  - Textures WebP (`/textures/moons/`)
+  - Tooltips au survol (nom, distance, période, description)
+
+- ✅ **Rovers** : Interface Mission Control pour les 5 rovers martiens
+  - Composant `RoverOverlay.tsx` — overlay plein écran 3 colonnes (lazy-loaded)
+  - Backend : endpoint `GET /api/rovers/positions`, table `rovers`, positions éditables en base
+  - Composants : `RoverModel3D.tsx` (GLTF + Draco), `RoverPhotoGallery.tsx` (placeholder)
+  - Intégration store Zustand : `roverPositions`, `fetchRoverPositions`, `selectedRoverId`
+  - Marqueurs 3D sur Mars (composant `MarsRovers.tsx`) avec clic → overlay
+
+**État global** : Mode système solaire fonctionnel avec planètes, lunes, rovers. Prêt pour V2-8+ (satellites, planètes en mode ciel).
+
+---
+
 ## Vision Générale
 
 La V2 intègre une nouvelle fonctionnalité cohérente :  
@@ -458,11 +481,11 @@ Le démarrage de l'application en mode "Système Solaire" requiert le chargement
 - Tooltip hover : nom + distance à la planète + période orbitale
 
 **Tâches** :
-- [x] Implémenter `PlanetMoons.tsx` : rendu générique par planète
-- [x] Intégrer `astronomia/moonposition` pour la Lune terrestre
-- [x] Intégrer `astronomia/jupitermoons` pour les 4 lunes galiléennes
-- [x] Appel JPL Horizons (ou éléments orbitaux statiques) pour les autres satellites
-- [x] Textures lunes : [Solar System Scope](https://www.solarsystemscope.com/textures/) (Lune, Titan, Io, Europa, Ganymède, Callisto disponibles)
+- [x] Implémenter `PlanetMoons.tsx` : rendu générique par planète — COMPLÉTÉ
+- [x] Intégrer `astronomia/moonposition` pour la Lune terrestre — COMPLÉTÉ (éléments orbitaux statiques)
+- [x] Intégrer `astronomia/jupitermoons` pour les 4 lunes galiléennes — COMPLÉTÉ (données Meeus statiques)
+- [x] Appel JPL Horizons (ou éléments orbitaux statiques) pour les autres satellites — COMPLÉTÉ (statiques)
+- [x] Textures lunes : [Solar System Scope](https://www.solarsystemscope.com/textures/) — COMPLÉTÉ (WebP dans `/textures/moons/`)
 
 ---
 
@@ -518,16 +541,16 @@ Le démarrage de l'application en mode "Système Solaire" requiert le chargement
    - Positions backend fetchées une seule fois et cachées dans le store
 
 **Tâches** :
-- [ ] Backend : modèle `Rover` + repository + service + endpoint `GET /api/rovers/positions`
-- [ ] Backend : supprimer le proxy photos NASA mort
-- [ ] Store : ajouter `roverOverlayClosing`, `roverPositions`, `fetchRoverPositions`
-- [ ] `types/rovers.ts` : restructurer (séparer métadonnées statiques / positions dynamiques)
-- [ ] `RoverOverlay.tsx` : layout 3 colonnes + animation slide-down (lazy-loaded)
-- [ ] `RoverModel3D.tsx` : placeholder cube rotatif (en attente GLTF)
-- [ ] `RoverPhotoGallery.tsx` : placeholder grille vide "photos à venir"
-- [ ] `MarsRovers.tsx` : connecter aux positions dynamiques du store
-- [ ] `App.tsx` : remplacer `<RoverInfoCard />` par `<Suspense><RoverOverlay /></Suspense>`
-- [ ] Cleanup : supprimer `RoverInfoCard.tsx` et le code backend NASA photos
+- [x] Backend : modèle `Rover` + repository + service + endpoint `GET /api/rovers/positions` — COMPLÉTÉ
+- [x] Backend : supprimer le proxy photos NASA mort — COMPLÉTÉ (no photos endpoint)
+- [x] Store : ajouter `roverOverlayClosing`, `roverPositions`, `fetchRoverPositions` — COMPLÉTÉ
+- [x] `types/rovers.ts` : restructurer (séparer métadonnées statiques / positions dynamiques) — COMPLÉTÉ
+- [x] `RoverOverlay.tsx` : layout 3 colonnes + animation slide-down (lazy-loaded) — COMPLÉTÉ
+- [x] `RoverModel3D.tsx` : support GLTF + Draco decoder (cube placeholder fallback) — COMPLÉTÉ
+- [x] `RoverPhotoGallery.tsx` : placeholder grille vide "photos à venir" — COMPLÉTÉ
+- [x] `MarsRovers.tsx` : connecter aux positions dynamiques du store — COMPLÉTÉ
+- [x] `App.tsx` : intégrer `RoverOverlay` lazy-loaded — COMPLÉTÉ
+- [x] Cleanup : supprimer `RoverInfoCard.tsx` et le code backend NASA photos — COMPLÉTÉ
 
 ---
 

@@ -156,10 +156,8 @@ export default function RoverOverlay() {
             style={{
               width: "100%",
               height: "100%",
-              maxHeight: "400px",
               borderRadius: "12px",
               overflow: "hidden",
-              background: "rgba(0,0,0,0.4)",
             }}
           >
             <Suspense fallback={<ModelPlaceholder />}>
@@ -169,21 +167,23 @@ export default function RoverOverlay() {
               >
                 <ambientLight intensity={0.4} />
                 <directionalLight position={[3, 3, 3]} intensity={1} />
-                <RoverModel3D color={meta?.color ?? "#888"} />
+                <RoverModel3D color={meta?.color ?? "#888"} modelPath={meta?.modelPath} />
               </Canvas>
             </Suspense>
           </div>
-          <p
-            style={{
-              color: "#556",
-              fontSize: "0.75rem",
-              marginTop: "12px",
-              textAlign: "center",
-              fontStyle: "italic",
-            }}
-          >
-            Modèle 3D à venir
-          </p>
+          {!meta?.modelPath && (
+            <p
+              style={{
+                color: "#556",
+                fontSize: "0.75rem",
+                marginTop: "12px",
+                textAlign: "center",
+                fontStyle: "italic",
+              }}
+            >
+              Modèle 3D non disponible
+            </p>
+          )}
         </div>
 
         {/* Colonne centre — Infos mission */}
