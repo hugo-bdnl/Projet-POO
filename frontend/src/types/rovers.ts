@@ -1,13 +1,9 @@
-/** Métadonnées statiques d'un rover martien. */
+/** Métadonnées statiques d'un rover martien (côté client). */
 export interface RoverMetadata {
   id: string;
   name: string;
   agency: string;
   active: boolean;
-  /** Latitude en degrés (Nord positif) */
-  lat: number;
-  /** Longitude en degrés (Est positif) */
-  lon: number;
   landingSite: string;
   missionStart: string;
   /** null = mission en cours */
@@ -15,18 +11,47 @@ export interface RoverMetadata {
   description: string;
   /** Couleur hex du marker 3D */
   color: string;
-  /** Lien vers la galerie photos officielle (fallback si API indisponible) */
+  /** Lien vers la galerie photos officielle */
   galleryUrl: string | null;
+  /** Chemin vers le modèle GLTF (optionnel, placeholder si absent) */
+  modelPath?: string;
+  /** Photos statiques (optionnel, placeholder si absent) */
+  photos?: RoverPhoto[];
 }
 
-export const MARS_ROVERS: RoverMetadata[] = [
-  {
-    id: "curiosity",
+/** Photo statique d'un rover */
+export interface RoverPhoto {
+  src: string;
+  caption: string;
+  date?: string;
+}
+
+/** Position dynamique d'un rover (depuis le backend) */
+export interface RoverPosition {
+  slug: string;
+  name: string;
+  agency: string;
+  active: boolean;
+  latitude: number;
+  longitude: number;
+  landingSite: string;
+}
+
+/** Métadonnées enrichies = statique + position dynamique */
+export interface RoverFull extends RoverMetadata {
+  lat: number;
+  lon: number;
+}
+
+/**
+ * Métadonnées statiques des 5 rovers.
+ * Les positions (lat/lon) viennent du backend et sont mergées au runtime.
+ */
+export const ROVER_METADATA: Record<string, Omit<RoverMetadata, "id">> = {
+  curiosity: {
     name: "Curiosity",
     agency: "NASA / MSL",
     active: true,
-    lat: -4.6,
-    lon: 137.4,
     landingSite: "Gale Crater",
     missionStart: "6 août 2012",
     missionEnd: null,
@@ -35,13 +60,10 @@ export const MARS_ROVERS: RoverMetadata[] = [
     color: "#e8a030",
     galleryUrl: "https://mars.nasa.gov/msl/multimedia/raw-images/",
   },
-  {
-    id: "perseverance",
+  perseverance: {
     name: "Perseverance",
     agency: "NASA / Mars 2020",
     active: true,
-    lat: 18.4,
-    lon: 77.4,
     landingSite: "Jezero Crater",
     missionStart: "18 février 2021",
     missionEnd: null,
@@ -50,13 +72,10 @@ export const MARS_ROVERS: RoverMetadata[] = [
     color: "#60c8ff",
     galleryUrl: "https://mars.nasa.gov/mars2020/multimedia/raw-images/",
   },
-  {
-    id: "opportunity",
+  opportunity: {
     name: "Opportunity",
     agency: "NASA / MER-B",
     active: false,
-    lat: -1.9,
-    lon: 354.5,
     landingSite: "Endeavour Crater",
     missionStart: "25 janvier 2004",
     missionEnd: "13 février 2019",
@@ -65,13 +84,10 @@ export const MARS_ROVERS: RoverMetadata[] = [
     color: "#cc8844",
     galleryUrl: "https://mars.nasa.gov/mer/gallery/all/opportunity.html",
   },
-  {
-    id: "spirit",
+  spirit: {
     name: "Spirit",
     agency: "NASA / MER-A",
     active: false,
-    lat: -14.6,
-    lon: 175.5,
     landingSite: "Columbia Hills",
     missionStart: "4 janvier 2004",
     missionEnd: "22 mars 2010",
@@ -80,13 +96,10 @@ export const MARS_ROVERS: RoverMetadata[] = [
     color: "#cc8844",
     galleryUrl: "https://mars.nasa.gov/mer/gallery/all/spirit.html",
   },
-  {
-    id: "zhurong",
+  zhurong: {
     name: "Zhurong",
     agency: "CNSA",
     active: false,
-    lat: 25.1,
-    lon: 109.9,
     landingSite: "Utopia Planitia",
     missionStart: "22 mai 2021",
     missionEnd: "~mai 2022",
@@ -95,4 +108,26 @@ export const MARS_ROVERS: RoverMetadata[] = [
     color: "#cc4444",
     galleryUrl: null,
   },
-];
+};
+
+/** Positions fallback (dupliquées du backend seed) */
+const _DEFAULT_POSITIONS: Record<string, { lat: number; lon: number }> = {
+  curiosity: { lat: -4.6, lon: 137.4 },
+  perseverance: { lat: 18.4, lon: 77.4 },
+  opportunity: { lat: -1.9, lon: 354.5 },
+  spirit: { lat: -14.6, lon: 175.5 },
+  zhurong: { lat: 25.1, lon: 109.9 },
+};
+
+/**
+ * Ancien export de compatibilité pour MarsRovers.tsx.
+ * Positions par défaut (fallback si backend indisponible).
+ */
+export const MARS_ROVERS: RoverFull[] = Object.entries(ROVER_METADATA).map(
+  ([id, meta]) => ({
+    id,
+    ...meta,
+    lat: _DEFAULT_POSITIONS[id]?.lat ?? 0,
+    lon: _DEFAULT_POSITIONS[id]?.lon ?? 0,
+  }),
+);

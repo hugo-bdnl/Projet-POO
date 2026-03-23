@@ -466,11 +466,13 @@ Le démarrage de l'application en mode "Système Solaire" requiert le chargement
 
 ---
 
-#### Tâche 7.2 — Rovers martiens en mode Globe (Mars)
+#### Tâche 7.2 — Rovers martiens : écran Mission Control plein écran
 
-**Description** : Afficher sur le globe de Mars les positions des rovers envoyés, avec panneau d'info et galerie photos.  
+**Description** : Refactor complet de l'interaction rover. Au lieu d'un panneau latéral (`RoverInfoCard`), un overlay plein écran "Mission Control" descend du haut de l'écran avec animation slide-down. Layout 3 colonnes : modèle 3D rotatif | infos mission | galerie photos. Lazy-loaded pour la performance.
 
-**Rovers à afficher** :
+> **Note** : L'API NASA Mars Rover Photos (`api.nasa.gov/mars-photos`) est **morte** (404 depuis fin 2025). Les photos seront fournies en statique ou via une future API alternative.
+
+**Rovers affichés** :
 | Rover | Agence | Actif | Coordonnées approx. |
 |---|---|---|---|
 | Curiosity | NASA | ✅ Oui (depuis 2012) | ~137.4°E, 4.6°S (Gale Crater) |
@@ -479,38 +481,53 @@ Le démarrage de l'application en mode "Système Solaire" requiert le chargement
 | Spirit | NASA | ❌ 2004–2010 | ~175.5°E, 14.6°S (Columbia Hills) |
 | Zhurong | CNSA | ❌ 2021–2022 | ~109.9°E, 25.1°N (Utopia Planitia) |
 
-**Données nécessaires et où les trouver** :
+**Architecture** :
 
-1. **Positions GPS des rovers** :
-   - Source authoritative : **NASA NAIF SPICE** (kernels SPK) — complexe à parser
-   - Source accessible : **[NASA Mars Trek](https://trek.nasa.gov/mars/)** — coordonnées lat/lon exportables
-   - Solution pragmatique : **positions statiques codées en dur** (les rovers bougent peu — Curiosity ~700m/jour max), avec une note de la date de dernière mise à jour. Pour Curiosity/Perseverance actifs, mettre à jour depuis le blog NASA Curiosity/Perseverance.
-   - Pour les rovers actifs uniquement : **[NASA InSight/Mars Exploration API](https://api.nasa.gov/)** — pas de position GPS directement, mais les rapports de sol (sol = jour martien) incluent la position
+1. **Backend — Positions dynamiques** :
+   - Endpoint `GET /api/rovers/positions` → retourne lat/lon de chaque rover
+   - Positions stockées en base (table `rovers`) ou fichier JSON, éditables sans redéploiement
+   - Le proxy photos NASA est **supprimé** (API morte)
+   - Architecture 4 couches : Model → Schema → Repository → Service → Router
 
-2. **Photos envoyées par les rovers** :
-   - **NASA Mars Rover Photos API** (gratuit, clé API NASA gratuite sur `api.nasa.gov`) :
-     ```
-     GET https://api.nasa.gov/mars-photos/api/v1/rovers/{rover}/latest_photos?api_key=DEMO_KEY
-     GET https://api.nasa.gov/mars-photos/api/v1/rovers/{rover}/photos?sol={sol}&api_key=KEY
-     ```
-   - Rovers supportés : `curiosity`, `opportunity`, `spirit`, `perseverance`
-   - Retourne : URL image, caméra utilisée, sol martien, date terrienne
-   - Clé DEMO_KEY : 30 req/heure sans inscription, suffisant pour un usage normal
-   - **À stocker dans `.env`** : `VITE_NASA_API_KEY=...`
+2. **Frontend — Overlay Mission Control** :
+   - **`RoverOverlay.tsx`** (lazy-loaded via `React.lazy()` + `<Suspense>`) :
+     - Overlay plein écran (`position: fixed`, `inset: 0`, `z-index: 1000`)
+     - Animation slide-down CSS : `translateY(-100%)` → `translateY(0)`, `cubic-bezier(0.16, 1, 0.3, 1)`, 500ms
+     - Bouton ✕ en haut à droite pour fermer (avec animation slide-up)
+     - Layout 3 colonnes responsive :
+       - **Gauche** : modèle 3D du rover (Canvas R3F isolé, `useGLTF` on-demand)
+       - **Centre** : infos mission (nom, agence, dates, site d'atterrissage, description)
+       - **Droite** : galerie photos (placeholder "Photos à venir" pour l'instant)
+   - **`RoverModel3D.tsx`** : placeholder (cube gris rotatif en attendant les GLTF)
+   - **`RoverPhotoGallery.tsx`** : grille vide avec message placeholder, prête pour `<img loading="lazy">`
 
-**Implémentation** :
-- Nouveau composant `MarsRovers.tsx`, monté uniquement quand `selectedPlanet === "mars"`
-- Chaque rover = petit marker 3D (icône robot stylisée ou simple `BoxGeometry`) à la lat/lon convertie en coordonnées sphériques
-- `onClick` → panneau InfoCard : nom du rover, mission, dates actives, dernière photo (fetch NASA API)
-- Rovers inactifs : marker grisé/atténué
-- **Clé API NASA** : à ajouter dans `backend/.env` et appeler via le backend pour ne pas exposer la clé côté client, OU utiliser `VITE_NASA_API_KEY` en acceptant l'exposition (clé gratuite, rate-limitée, acceptable)
+3. **Store Zustand** :
+   - Ajout `roverOverlayClosing: boolean` (pilote l'animation de fermeture)
+   - Ajout `roverPositions: Record<string, {lat, lon}>` (cache positions backend)
+   - Ajout `fetchRoverPositions()` (fetch une fois, cache en store)
+
+4. **Types** :
+   - `types/rovers.ts` : séparation métadonnées statiques (`ROVER_METADATA`) / positions dynamiques
+   - Ajout champs optionnels `modelPath?`, `photos?` pour enrichissement futur
+
+5. **Performance** :
+   - `React.lazy()` : le bundle overlay n'est chargé qu'au premier clic rover
+   - Canvas R3F isolé dans l'overlay (pas de conflit avec le Canvas principal)
+   - `useGLTF` chargé on-demand (pas de preload de modèles 3D non visibles)
+   - Photos en `<img loading="lazy">` quand elles seront ajoutées
+   - Positions backend fetchées une seule fois et cachées dans le store
 
 **Tâches** :
-- [ ] Créer `MarsRovers.tsx` avec positions statiques initiales
-- [ ] Ajouter endpoint backend `GET /api/rovers/{rover}/photos` (proxy NASA API pour masquer la clé)
-- [ ] Créer la modale/panneau InfoCard rover avec galerie photos
-- [ ] Conversion lat/lon → coordonnées 3D sur sphère Mars
-- [ ] Style distinctif rovers actifs vs inactifs
+- [ ] Backend : modèle `Rover` + repository + service + endpoint `GET /api/rovers/positions`
+- [ ] Backend : supprimer le proxy photos NASA mort
+- [ ] Store : ajouter `roverOverlayClosing`, `roverPositions`, `fetchRoverPositions`
+- [ ] `types/rovers.ts` : restructurer (séparer métadonnées statiques / positions dynamiques)
+- [ ] `RoverOverlay.tsx` : layout 3 colonnes + animation slide-down (lazy-loaded)
+- [ ] `RoverModel3D.tsx` : placeholder cube rotatif (en attente GLTF)
+- [ ] `RoverPhotoGallery.tsx` : placeholder grille vide "photos à venir"
+- [ ] `MarsRovers.tsx` : connecter aux positions dynamiques du store
+- [ ] `App.tsx` : remplacer `<RoverInfoCard />` par `<Suspense><RoverOverlay /></Suspense>`
+- [ ] Cleanup : supprimer `RoverInfoCard.tsx` et le code backend NASA photos
 
 ---
 

@@ -1,8 +1,9 @@
-import { useRef, useState, useMemo } from "react";
+import { useRef, useState, useMemo, useEffect } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 import { useSkyStore } from "../stores/useSkyStore";
-import { MARS_ROVERS, type RoverMetadata } from "../types/rovers";
+import { ROVER_METADATA, MARS_ROVERS } from "../types/rovers";
+import type { RoverFull } from "../types/rovers";
 
 // ── Scratch vectors hors composant (évite l'allocation dans useFrame à 60 fps) ──
 const _SCALE_NORMAL = new THREE.Vector3(1, 1, 1);
@@ -31,7 +32,7 @@ function latLonToXYZ(
 // ── Marker individuel ─────────────────────────────────────────────────────────
 
 interface RoverMarkerProps {
-  rover: RoverMetadata;
+  rover: RoverFull;
   isSelected: boolean;
   onSelect: (id: string | null) => void;
 }
@@ -40,7 +41,7 @@ function RoverMarker({ rover, isSelected, onSelect }: RoverMarkerProps) {
   const meshRef = useRef<THREE.Group>(null!);
   const [hovered, setHovered] = useState(false);
 
-  // Position statique — calculée une seule fois par rover (dépendances constantes)
+  // Position calculée une seule fois par rover (dépendances constantes)
   const position = useMemo(
     () => latLonToXYZ(rover.lat, rover.lon),
     [rover.lat, rover.lon],
@@ -53,7 +54,6 @@ function RoverMarker({ rover, isSelected, onSelect }: RoverMarkerProps) {
       : hovered
         ? _SCALE_HOVERED
         : _SCALE_NORMAL;
-    // Court-circuit si déjà à la bonne échelle
     if (!meshRef.current.scale.equals(target)) {
       meshRef.current.scale.lerp(target, delta * 10);
     }
@@ -107,10 +107,42 @@ function RoverMarker({ rover, isSelected, onSelect }: RoverMarkerProps) {
 export function MarsRovers() {
   const selectedRoverId = useSkyStore((s) => s.selectedRoverId);
   const setSelectedRoverId = useSkyStore((s) => s.setSelectedRoverId);
+  const roverPositions = useSkyStore((s) => s.roverPositions);
+  const fetchRoverPositions = useSkyStore((s) => s.fetchRoverPositions);
+
+  // Fetch les positions une fois au montage
+  useEffect(() => {
+    fetchRoverPositions();
+  }, [fetchRoverPositions]);
+
+  // Merge positions dynamiques (backend) avec métadonnées statiques (client)
+  const rovers: RoverFull[] = useMemo(() => {
+    if (roverPositions.length === 0) return MARS_ROVERS;
+
+    return roverPositions.map((pos) => {
+      const meta = ROVER_METADATA[pos.slug];
+      return {
+        id: pos.slug,
+        lat: pos.latitude,
+        lon: pos.longitude,
+        ...(meta ?? {
+          name: pos.name,
+          agency: pos.agency,
+          active: pos.active,
+          landingSite: pos.landingSite,
+          missionStart: "",
+          missionEnd: null,
+          description: "",
+          color: "#888",
+          galleryUrl: null,
+        }),
+      };
+    });
+  }, [roverPositions]);
 
   return (
     <>
-      {MARS_ROVERS.map((rover) => (
+      {rovers.map((rover) => (
         <RoverMarker
           key={rover.id}
           rover={rover}

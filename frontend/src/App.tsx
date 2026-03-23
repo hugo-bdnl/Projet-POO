@@ -1,4 +1,4 @@
-import { Suspense, useEffect, useState, useRef } from "react";
+import { Suspense, lazy, useEffect, useState, useRef } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { OrbitControls, Stars, useTexture } from "@react-three/drei";
 import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
@@ -14,8 +14,10 @@ import { EarthGuide } from "./components/EarthGuide";
 import { PLANETS_METADATA } from "./types/planets";
 import { SolarSystem } from "./components/SolarSystem";
 import { PlanetInfoCard } from "./components/PlanetInfoCard";
-import { RoverInfoCard } from "./components/RoverInfoCard";
 import { Loader3D } from "./components/Loader3D";
+
+// Lazy-loaded : le bundle de l'overlay rover n'est chargé qu'au premier clic
+const RoverOverlay = lazy(() => import("./components/RoverOverlay"));
 import { useSkyStore } from "./stores/useSkyStore";
 import { useConstellationStore } from "./stores/useConstellationStore";
 import { useObservationStore } from "./stores/useObservationStore";
@@ -301,7 +303,10 @@ function App() {
       {/* Barre unifiée pour chercher et afficher les constellations en mode globe */}
       <ConstellationSidebar />
       <PlanetInfoCard />
-      <RoverInfoCard />
+      {/* Overlay Mission Control rover — lazy-loaded */}
+      <Suspense fallback={null}>
+        <RoverOverlay />
+      </Suspense>
       {/* Contrôle Temporel - Ciel Nocturne */}
       <TimeSlider />
 

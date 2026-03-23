@@ -1,22 +1,22 @@
-"""Schémas Pydantic pour les données des rovers martiens."""
+"""Schémas Pydantic pour les positions des rovers martiens."""
 
 from pydantic import BaseModel
 
 
-class RoverPhoto(BaseModel):
-    """Une photo individuelle envoyée par un rover."""
+class RoverPosition(BaseModel):
+    """Position et statut d'un rover martien."""
 
-    id: int
-    img_src: str
-    earth_date: str
-    sol: int
-    camera_name: str
-    camera_full_name: str
+    slug: str
+    name: str
+    agency: str
+    active: bool
+    latitude: float
+    longitude: float
+    landing_site: str
 
 
-class RoverPhotosResponse(BaseModel):
-    """Réponse de l'endpoint photos d'un rover."""
+class RoverPositionsResponse(BaseModel):
+    """Réponse de l'endpoint positions des rovers."""
 
-    rover: str
-    photos: list[RoverPhoto]
+    rovers: list[RoverPosition]
     total: int

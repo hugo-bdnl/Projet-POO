@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import type { VisibleStar } from "../types";
+import type { RoverPosition } from "../types/rovers";
 import { astronomyService } from "../services/api";
 
 type ViewMode = "globe" | "sky" | "system";
@@ -44,6 +45,10 @@ interface SkyState {
   ) => void;
   selectedRoverId: string | null;
   setSelectedRoverId: (id: string | null) => void;
+  roverOverlayClosing: boolean;
+  setRoverOverlayClosing: (closing: boolean) => void;
+  roverPositions: RoverPosition[];
+  fetchRoverPositions: () => Promise<void>;
   cameraTarget: [number, number, number] | null;
   setCameraTarget: (target: [number, number, number] | null) => void;
   showAzAltGrid: boolean;
@@ -73,6 +78,8 @@ export const useSkyStore = create<SkyState>((set, get) => ({
   selectedStar: null,
   selectedPlanet: null,
   selectedRoverId: null,
+  roverOverlayClosing: false,
+  roverPositions: [],
   error: null,
   currentLat: null,
   currentLon: null,
@@ -154,6 +161,18 @@ export const useSkyStore = create<SkyState>((set, get) => ({
   setSelectedPlanet: (planet) =>
     set({ selectedPlanet: planet, selectedRoverId: null }),
   setSelectedRoverId: (id) => set({ selectedRoverId: id }),
+  setRoverOverlayClosing: (closing) => set({ roverOverlayClosing: closing }),
+
+  fetchRoverPositions: async () => {
+    // Ne fetch qu'une fois (si déjà en cache, on ne refait pas l'appel)
+    if (get().roverPositions.length > 0) return;
+    try {
+      const positions = await astronomyService.getRoverPositions();
+      set({ roverPositions: positions });
+    } catch (err) {
+      console.error("Échec de fetchRoverPositions:", err);
+    }
+  },
 
   cameraTarget: null,
   setCameraTarget: (target) => set({ cameraTarget: target }),

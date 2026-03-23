@@ -6,6 +6,7 @@ import type {
   ConstellationDetail,
   BestLocation,
 } from "../types";
+import type { RoverPosition } from "../types/rovers";
 
 // URL de base : variable d'env en prod déployée, sinon URL relative vide pour
 // que les appels /api/* passent par le proxy Vite (dev port 5173 / preview port 4173)
@@ -98,5 +99,16 @@ export const astronomyService = {
       { params },
     );
     return response.data;
+  },
+
+  /**
+   * Récupère les positions de tous les rovers martiens.
+   */
+  getRoverPositions: async (): Promise<RoverPosition[]> => {
+    const response = await apiClient.get<{
+      rovers: RoverPosition[];
+      total: number;
+    }>("/api/rovers/positions");
+    return response.data.rovers;
   },
 };
