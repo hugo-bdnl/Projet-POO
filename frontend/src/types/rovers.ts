@@ -11,8 +11,6 @@ export interface RoverMetadata {
   description: string;
   /** Couleur hex du marker 3D */
   color: string;
-  /** Lien vers la galerie photos officielle */
-  galleryUrl: string | null;
   /** Chemin vers le modèle GLTF (optionnel, placeholder si absent) */
   modelPath?: string;
   /** Photos statiques (optionnel, placeholder si absent) */
@@ -58,8 +56,13 @@ export const ROVER_METADATA: Record<string, Omit<RoverMetadata, "id">> = {
     description:
       "Rover de taille voiture explorant le cratère Gale depuis 2012. Il a confirmé l'ancienne habitabilité de Mars en détectant des composés organiques et d'anciens lits de rivière.",
     color: "#e8a030",
-    galleryUrl: "https://mars.nasa.gov/msl/multimedia/raw-images/",
     modelPath: "/models/Curiosity.glb",
+    photos: [
+      { src: "/photos/Curiosity/curiosity_1.webp", caption: "Surface du cratère Gale" },
+      { src: "/photos/Curiosity/curiosity_2.webp", caption: "Formation rocheuse" },
+      { src: "/photos/Curiosity/curiosity_3.webp", caption: "Mont Sharp" },
+      { src: "/photos/Curiosity/curiosity_4.webp", caption: "Panorama martien" },
+    ],
   },
   perseverance: {
     name: "Perseverance",
@@ -71,8 +74,13 @@ export const ROVER_METADATA: Record<string, Omit<RoverMetadata, "id">> = {
     description:
       "Le rover le plus avancé sur Mars. Il collecte des échantillons de roche pour un futur retour sur Terre et a déployé l'hélicoptère Ingenuity — le premier vol motorisé sur une autre planète.",
     color: "#60c8ff",
-    galleryUrl: "https://mars.nasa.gov/mars2020/multimedia/raw-images/",
     modelPath: "/models/Perseverance.glb",
+    photos: [
+      { src: "/photos/Perseverance/perseverance_1.webp", caption: "Cratère Jezero" },
+      { src: "/photos/Perseverance/perseverance_2.webp", caption: "Dépôt fluviatile" },
+      { src: "/photos/Perseverance/perseverance_3.webp", caption: "Ingenuity en vol" },
+      { src: "/photos/Perseverance/perseverance_4.webp", caption: "Collecte d'échantillons" },
+    ],
   },
   opportunity: {
     name: "Opportunity",
@@ -84,8 +92,13 @@ export const ROVER_METADATA: Record<string, Omit<RoverMetadata, "id">> = {
     description:
       "Prévu pour 90 sols, Opportunity a opéré pendant 15 ans et parcouru 45 km — un record absolu. Le contact fut définitivement perdu après une tempête de poussière planétaire en 2018.",
     color: "#cc8844",
-    galleryUrl: "https://mars.nasa.gov/mer/gallery/all/opportunity.html",
     modelPath: "/models/Spirit_and_Opportunity.glb",
+    photos: [
+      { src: "/photos/Opportunity/opportunity_1.webp", caption: "Cratère Endeavour" },
+      { src: "/photos/Opportunity/opportunity_2.webp", caption: "Plaines de Meridiani" },
+      { src: "/photos/Opportunity/opportunity_3.webp", caption: "Roches sédimentaires" },
+      { src: "/photos/Opportunity/opportunity_4.webp", caption: "Traces de roues" },
+    ],
   },
   spirit: {
     name: "Spirit",
@@ -97,8 +110,13 @@ export const ROVER_METADATA: Record<string, Omit<RoverMetadata, "id">> = {
     description:
       "Jumeau d'Opportunity, Spirit s'est immobilisé dans du sol mou en 2009. Sans pouvoir se repositionner pour profiter du soleil, il n'a pas survécu à l'hiver martien.",
     color: "#cc8844",
-    galleryUrl: "https://mars.nasa.gov/mer/gallery/all/spirit.html",
     modelPath: "/models/Spirit_and_Opportunity.glb",
+    photos: [
+      { src: "/photos/Spirit/spirit_1.webp", caption: "Columbia Hills" },
+      { src: "/photos/Spirit/spirit_2.webp", caption: "Cratère Bonneville" },
+      { src: "/photos/Spirit/spirit_3.webp", caption: "Home Plate" },
+      { src: "/photos/Spirit/spirit_4.webp", caption: "Sol martien" },
+    ],
   },
   zhurong: {
     name: "Zhurong",
@@ -110,8 +128,13 @@ export const ROVER_METADATA: Record<string, Omit<RoverMetadata, "id">> = {
     description:
       "Premier rover martien chinois. En hibernation depuis mai 2022, il n'a pas pu se réveiller comme prévu après l'hiver martien. Son état actuel reste incertain.",
     color: "#cc4444",
-    galleryUrl: null,
     // Pas de modèle 3D disponible gratuitement
+    photos: [
+      { src: "/photos/Zhurong/zhurong_1.webp", caption: "Utopia Planitia" },
+      { src: "/photos/Zhurong/zhurong_2.webp", caption: "Site d'atterrissage" },
+      { src: "/photos/Zhurong/zhurong_3.webp", caption: "Surface martienne" },
+      { src: "/photos/Zhurong/zhurong_4.webp", caption: "Panorama" },
+    ],
   },
 };
 

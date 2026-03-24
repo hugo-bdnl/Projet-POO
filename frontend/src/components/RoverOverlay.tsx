@@ -284,10 +284,7 @@ export default function RoverOverlay() {
             Galerie
           </h2>
           <div style={{ flex: 1, minHeight: 0 }}>
-            <RoverPhotoGallery
-              photos={meta?.photos}
-              galleryUrl={meta?.galleryUrl ?? null}
-            />
+            <RoverPhotoGallery photos={meta?.photos} />
           </div>
         </div>
       </div>

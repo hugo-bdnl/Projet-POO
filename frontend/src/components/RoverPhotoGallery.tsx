@@ -2,17 +2,13 @@ import type { RoverPhoto } from "../types/rovers";
 
 interface RoverPhotoGalleryProps {
   photos?: RoverPhoto[];
-  galleryUrl: string | null;
 }
 
 /**
  * Galerie photos d'un rover.
  * Affiche les photos statiques si disponibles, sinon un placeholder.
  */
-export function RoverPhotoGallery({
-  photos,
-  galleryUrl,
-}: RoverPhotoGalleryProps) {
+export function RoverPhotoGallery({ photos }: RoverPhotoGalleryProps) {
   if (!photos || photos.length === 0) {
     return (
       <div
@@ -32,22 +28,6 @@ export function RoverPhotoGallery({
         <p style={{ fontSize: "0.95rem", lineHeight: 1.6 }}>
           Photos à venir
         </p>
-        {galleryUrl && (
-          <a
-            href={galleryUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{
-              color: "#00b4d8",
-              fontSize: "0.85rem",
-              textDecoration: "none",
-              borderBottom: "1px solid rgba(0, 180, 216, 0.3)",
-              paddingBottom: "2px",
-            }}
-          >
-            Voir la galerie officielle
-          </a>
-        )}
       </div>
     );
   }
@@ -56,7 +36,7 @@ export function RoverPhotoGallery({
     <div
       style={{
         display: "grid",
-        gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))",
+        gridTemplateColumns: "repeat(2, 1fr)",
         gap: "8px",
         padding: "8px",
         overflowY: "auto",
