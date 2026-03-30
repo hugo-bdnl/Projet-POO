@@ -595,13 +595,13 @@ Le démarrage de l'application en mode "Système Solaire" requiert le chargement
 - Tooltip hover : nom du satellite, altitude, vitesse, inclinaison
 
 **Tâches** :
-- [ ] Endpoint backend `GET /api/satellites/tle?group={group}` — proxy CelesTrak + cache Redis/SQLite 12h
-- [ ] Créer `SatelliteCoverage.tsx` avec `instancedMesh` pour perf
-- [ ] Intégrer propagation SGP4 via `satellite.js` (déjà installé)
-- [ ] Toggle UI dans le HUD Globe (bouton activable/désactivable)
-- [ ] Throttle calcul positions à 1×/s avec scratch variables (règles R3F performance)
-- [ ] Sélection de groupes affichables (Starlink, GPS, ISS...)
-- [ ] Panneau infos satellite au clic
+- [x] Endpoint backend `GET /api/satellites/tle?group={group}` — proxy CelesTrak + cache TTL 12h — COMPLÉTÉ
+- [x] Créer `SatelliteCoverage.tsx` avec `instancedMesh` pour perf — COMPLÉTÉ
+- [x] Intégrer propagation SGP4 via `satellite.js` (déjà installé) — COMPLÉTÉ
+- [x] Toggle UI dans le HUD Globe (bouton activable/désactivable) — COMPLÉTÉ
+- [x] Throttle calcul positions à 1×/s avec scratch variables (règles R3F performance) — COMPLÉTÉ
+- [x] Sélection de groupes affichables (Starlink, GPS, ISS...) — COMPLÉTÉ
+- [x] Panneau infos satellite au clic — COMPLÉTÉ
 
 ---
 

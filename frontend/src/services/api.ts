@@ -7,6 +7,7 @@ import type {
   BestLocation,
 } from "../types";
 import type { RoverPosition } from "../types/rovers";
+import type { SatelliteTLEResponse } from "../types/satellite";
 
 // URL de base : variable d'env en prod déployée, sinon URL relative vide pour
 // que les appels /api/* passent par le proxy Vite (dev port 5173 / preview port 4173)
@@ -110,5 +111,16 @@ export const astronomyService = {
       total: number;
     }>("/api/rovers/positions");
     return response.data.rovers;
+  },
+
+  /**
+   * Récupère les TLE d'un groupe de satellites depuis le proxy CelesTrak.
+   */
+  getSatelliteTLEs: async (group: string): Promise<SatelliteTLEResponse> => {
+    const response = await apiClient.get<SatelliteTLEResponse>(
+      "/api/satellites/tle",
+      { params: { group } },
+    );
+    return response.data;
   },
 };

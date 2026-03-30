@@ -15,6 +15,8 @@ import { computeGMST } from "../utils/skyCoords";
 import { ISS } from "./ISS";
 import { PlanetMoons } from "./PlanetMoons";
 import { MarsRovers } from "./MarsRovers";
+import { SatelliteCoverage } from "./SatelliteCoverage";
+import { useSatelliteStore } from "../stores/useSatelliteStore";
 import { PLANETS_METADATA } from "../types/planets";
 
 export function Globe() {
@@ -25,6 +27,7 @@ export function Globe() {
   const tsStr = useSkyStore((s) => s.timestamp);
   const selectedPlanet = useSkyStore((s) => s.selectedPlanet) || "earth";
   const { points, fetchPoints } = useObservationStore();
+  const showSatellites = useSatelliteStore((s) => s.showSatellites);
 
   const customUniformsRef = useRef({
     uSunDirection: { value: new THREE.Vector3(1, 0, 0) },
@@ -211,6 +214,9 @@ export function Globe() {
 
         {/* Tâche 6 : ISS hors du mesh rotatif (disponible que pour la Terre) */}
         {selectedPlanet === "earth" && <ISS />}
+
+        {/* Tâche 7.3 : Couverture satellitaire (Terre uniquement) */}
+        {selectedPlanet === "earth" && showSatellites && <SatelliteCoverage />}
 
         {/* Tâche 7.1 : Satellites naturels — planètes avec moons > 0 */}
         {PLANETS_METADATA[selectedPlanet].moons > 0 && (

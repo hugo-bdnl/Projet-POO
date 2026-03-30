@@ -21,6 +21,7 @@ const RoverOverlay = lazy(() => import("./components/RoverOverlay"));
 import { useSkyStore } from "./stores/useSkyStore";
 import { useConstellationStore } from "./stores/useConstellationStore";
 import { useObservationStore } from "./stores/useObservationStore";
+import { useSatelliteStore } from "./stores/useSatelliteStore";
 import * as THREE from "three";
 import "./App.css";
 
@@ -153,6 +154,7 @@ function App() {
   } = useSkyStore();
   const { error: constellationError } = useConstellationStore();
   const { error: obsError } = useObservationStore();
+  const { error: satelliteError } = useSatelliteStore();
 
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [gpuWarning, setGpuWarning] = useState<string | null>(null);
@@ -166,7 +168,7 @@ function App() {
 
   // Gestion des erreurs via Toast
   useEffect(() => {
-    const error = skyError || constellationError || obsError;
+    const error = skyError || constellationError || obsError || satelliteError;
     if (error) {
       setTimeout(() => setToastMessage(error), 0);
       const timer = setTimeout(() => setToastMessage(null), 5000);
@@ -294,6 +296,7 @@ function App() {
           </button>
         </div>
       )}
+
 
       {/* Toast Notification */}
       {toastMessage && <div className="toast-container">⚠️ {toastMessage}</div>}
