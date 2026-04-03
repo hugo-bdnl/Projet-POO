@@ -73,7 +73,6 @@ async def fetch_satellite_tles(group: str) -> list[SatelliteTLE]:
             f"Groupe inconnu : '{group}'. Groupes valides : {sorted(VALID_GROUPS)}"
         )
 
-    # Vérifier le cache
     if group in _tle_cache:
         logger.debug("Cache hit pour le groupe '%s'", group)
         return _tle_cache[group]
@@ -84,6 +83,15 @@ async def fetch_satellite_tles(group: str) -> list[SatelliteTLE]:
     async with httpx.AsyncClient(timeout=30.0, follow_redirects=True) as client:
         response = await client.get(url)
         response.raise_for_status()
+
+    # CelesTrak renvoie un message texte (200 OK) si les données n'ont pas changé
+    # depuis le dernier téléchargement de cette IP (fenêtre de 2h).
+    if "has not updated" in response.text:
+        raise RuntimeError(
+            f"CelesTrak limite les téléchargements à 1×/2h pour le groupe '{group}' "
+            "(dernier téléchargement détecté par CelesTrak depuis cette IP). "
+            "Réessayez dans 2 heures."
+        )
 
     satellites = parse_tle_text(response.text)
     _tle_cache[group] = satellites

@@ -20,12 +20,11 @@ import { SATELLITE_GROUP_META } from "../types/satellite";
 const GLOBE_RADIUS = 1;
 const EARTH_RADIUS_KM = 6371.0;
 const ALTITUDE_AMPLIFICATION = 2.0;
-// Taille des points satellites
-const SATELLITE_SIZE = 0.006;
+// Taille en pixels, indépendante du zoom (sizeAttenuation: false)
+const POINT_SIZE_PX = 3;
 
-// Scratch variables pré-allouées (JAMAIS dans useFrame)
-const _tempObj = new THREE.Object3D();
-const _tempColor = new THREE.Color();
+// Couleur de fallback pour groupe inconnu — pré-allouée hors composant
+const _fallbackColor = new THREE.Color("#888888");
 
 /** Satellite parsé prêt pour la propagation SGP4 */
 interface ParsedSatellite {
@@ -37,21 +36,23 @@ interface ParsedSatellite {
   period_min: number;
 }
 
-/** Convertit latitude (rad), longitude (rad), altitude (km) → Vector3 */
-function geodeticToVector3(
+/**
+ * Écrit les coordonnées XYZ (globe 3D) dans un Float32Array à l'offset donné.
+ * Évite toute allocation dans la boucle useFrame.
+ */
+function writeGeodeticToBuffer(
   lat: number,
   lon: number,
   alt: number,
-  target: THREE.Object3D,
-) {
+  arr: Float32Array,
+  offset: number,
+): void {
   const r = GLOBE_RADIUS + (alt / EARTH_RADIUS_KM) * ALTITUDE_AMPLIFICATION;
   const phi = Math.PI / 2 - lat;
   const theta = lon + Math.PI / 2;
-  target.position.set(
-    r * Math.sin(phi) * Math.cos(theta),
-    r * Math.cos(phi),
-    r * Math.sin(phi) * Math.sin(theta),
-  );
+  arr[offset]     = r * Math.sin(phi) * Math.cos(theta);
+  arr[offset + 1] = r * Math.cos(phi);
+  arr[offset + 2] = r * Math.sin(phi) * Math.sin(theta);
 }
 
 /** Parse les TLEs en satrecs avec gestion d'erreurs */
@@ -63,11 +64,8 @@ function parseTLEs(
   for (const tle of tles) {
     try {
       const satrec = twoline2satrec(tle.line1, tle.line2);
-      // Extraire le NORAD ID depuis line1 (colonnes 2-6)
       const noradId = tle.line1.substring(2, 7).trim();
-      // Inclinaison depuis line2 (colonnes 8-15)
       const inclination = parseFloat(tle.line2.substring(8, 16).trim());
-      // Mouvement moyen (rev/jour) depuis line2 (colonnes 52-62) → période en minutes
       const meanMotion = parseFloat(tle.line2.substring(52, 63).trim());
       const period = meanMotion > 0 ? 1440 / meanMotion : 0;
 
@@ -80,7 +78,7 @@ function parseTLEs(
         period_min: period,
       });
     } catch {
-      // TLE invalide, on l'ignore silencieusement
+      // TLE invalide, ignoré silencieusement
     }
   }
   return parsed;
@@ -91,7 +89,6 @@ export function SatelliteCoverage() {
     useSatelliteStore();
   const { setSelectedPoint } = useObservationStore();
 
-  const meshRef = useRef<THREE.InstancedMesh>(null!);
   const lastUpdateRef = useRef<number>(-999);
 
   // Fetch les TLEs des groupes actifs au montage / changement
@@ -120,7 +117,7 @@ export function SatelliteCoverage() {
     return result;
   }, [activeGroups, parsedByGroup]);
 
-  // Couleurs par groupe pré-calculées
+  // Couleurs par groupe pré-calculées (THREE.Color réutilisables)
   const groupColors = useMemo(() => {
     const colors = new Map<SatelliteGroup, THREE.Color>();
     for (const [group, meta] of Object.entries(SATELLITE_GROUP_META)) {
@@ -129,84 +126,92 @@ export function SatelliteCoverage() {
     return colors;
   }, []);
 
-  // Géométrie et matériau partagés
-  const geometry = useMemo(
-    () => new THREE.SphereGeometry(SATELLITE_SIZE, 6, 6),
-    [],
-  );
+  // Géométrie unique, mutée en place quand les satellites changent
+  const geometry = useMemo(() => new THREE.BufferGeometry(), []);
+
+  // Matériau : points en pixels fixes, couleurs par vertex
   const material = useMemo(
     () =>
-      new THREE.MeshBasicMaterial({
+      new THREE.PointsMaterial({
+        size: POINT_SIZE_PX,
+        sizeAttenuation: false, // taille constante quel que soit le zoom
+        vertexColors: true,
         toneMapped: false,
       }),
     [],
   );
 
-  // Mettre à jour le nombre d'instances quand les satellites changent
+  // Nettoyage GPU à la destruction du composant
   useEffect(() => {
-    if (!meshRef.current) return;
-    meshRef.current.count = allSatellites.length;
+    return () => {
+      geometry.dispose();
+      material.dispose();
+    };
+  }, [geometry, material]);
 
-    // Initialiser les couleurs
-    for (let i = 0; i < allSatellites.length; i++) {
-      const color = groupColors.get(allSatellites[i].group) || _tempColor;
-      meshRef.current.setColorAt(i, color);
-    }
-    if (meshRef.current.instanceColor) {
-      meshRef.current.instanceColor.needsUpdate = true;
+  // Réinitialise les buffers position + couleur quand la liste de satellites change
+  useEffect(() => {
+    const count = allSatellites.length;
+    const positions = new Float32Array(count * 3); // initialisé à 0,0,0
+    const colors = new Float32Array(count * 3);
+
+    for (let i = 0; i < count; i++) {
+      const color = groupColors.get(allSatellites[i].group) ?? _fallbackColor;
+      colors[i * 3]     = color.r;
+      colors[i * 3 + 1] = color.g;
+      colors[i * 3 + 2] = color.b;
     }
 
-    // Forcer une première propagation immédiate
+    geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+    geometry.setAttribute("color", new THREE.BufferAttribute(colors, 3));
+    geometry.setDrawRange(0, count);
+
+    // Forcer une propagation immédiate au prochain frame
     lastUpdateRef.current = -999;
-  }, [allSatellites, groupColors]);
+  }, [allSatellites, groupColors, geometry]);
 
   useFrame((state) => {
-    if (!meshRef.current || allSatellites.length === 0) return;
+    if (allSatellites.length === 0) return;
 
-    // Throttle : propager les positions 1× par seconde seulement
+    // Throttle : 1 propagation SGP4 par seconde max
     if (state.clock.elapsedTime - lastUpdateRef.current < 1) return;
     lastUpdateRef.current = state.clock.elapsedTime;
 
+    const posAttr = geometry.getAttribute("position") as THREE.BufferAttribute | undefined;
+    if (!posAttr) return;
+
+    const arr = posAttr.array as Float32Array;
     const now = new Date();
     const gmst = gstime(now);
 
     for (let i = 0; i < allSatellites.length; i++) {
-      const sat = allSatellites[i];
-      const pv = propagate(sat.satrec, now);
-
-      if (pv && pv.position && typeof pv.position !== "boolean") {
+      const pv = propagate(allSatellites[i].satrec, now);
+      if (pv?.position && typeof pv.position !== "boolean") {
         const eci = pv.position as { x: number; y: number; z: number };
         const gd = eciToGeodetic(eci, gmst);
-        geodeticToVector3(gd.latitude, gd.longitude, gd.height, _tempObj);
-        _tempObj.updateMatrix();
-        meshRef.current.setMatrixAt(i, _tempObj.matrix);
+        writeGeodeticToBuffer(gd.latitude, gd.longitude, gd.height, arr, i * 3);
       }
     }
 
-    meshRef.current.instanceMatrix.needsUpdate = true;
+    posAttr.needsUpdate = true;
   });
 
-  // Handler de clic sur un satellite
+  // Handler de clic — `index` est l'index du point dans THREE.Points
   const handleClick = (e: THREE.Event) => {
-    // Typage de l'event R3F
     const event = e as unknown as {
       stopPropagation: () => void;
-      instanceId?: number;
+      index?: number;
     };
     event.stopPropagation();
-    const instanceId = event.instanceId;
-    if (
-      typeof instanceId !== "number" ||
-      instanceId < 0 ||
-      instanceId >= allSatellites.length
-    )
+    const idx = event.index;
+    if (typeof idx !== "number" || idx < 0 || idx >= allSatellites.length)
       return;
 
-    const sat = allSatellites[instanceId];
+    const sat = allSatellites[idx];
     const now = new Date();
     const pv = propagate(sat.satrec, now);
 
-    if (pv && pv.position && typeof pv.position !== "boolean") {
+    if (pv?.position && typeof pv.position !== "boolean") {
       const eci = pv.position as { x: number; y: number; z: number };
       const gd = eciToGeodetic(eci, gstime(now));
 
@@ -235,9 +240,9 @@ export function SatelliteCoverage() {
   if (allSatellites.length === 0) return null;
 
   return (
-    <instancedMesh
-      ref={meshRef}
-      args={[geometry, material, allSatellites.length]}
+    <points
+      geometry={geometry}
+      material={material}
       frustumCulled={false}
       onClick={handleClick}
       onPointerOver={() => {

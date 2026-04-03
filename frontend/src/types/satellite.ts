@@ -82,7 +82,7 @@ export const SATELLITE_GROUP_META: Record<SatelliteGroup, SatelliteGroupMeta> = 
   },
   active: {
     label: "Tous actifs",
-    color: "#ffffff",
+    color: "#ff9900",
     description: "Tous les satellites actifs (~6000)",
   },
 };
