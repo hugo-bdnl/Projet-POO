@@ -98,6 +98,33 @@ python -m pytest tests/backend/test_constellations.py::TestKnownConstellations::
 - `GET /api/constellations/search?q=Ori` → status 200, résultats non vides
 - `GET /api/constellations/{id}/best-location` → status 200, contient observation_point_id
 
+### `tests/test_rovers.py` (priorité haute)
+
+**API :**
+
+- `GET /api/rovers/positions` → status 200, retourne une liste non vide
+- Réponse contient les 5 rovers par défaut (`curiosity`, `perseverance`, `opportunity`, `spirit`, `zhurong`)
+- Chaque rover a `slug`, `name`, `latitude`, `longitude`, `active`, `landing_site`
+- `latitude` ∈ [-90, 90], `longitude` ∈ [-180, 180]
+- Cohérence : Curiosity et Perseverance `active=true`, les 3 autres `active=false`
+
+### `tests/test_satellites.py` (priorité moyenne)
+
+**Service :**
+
+- `parse_tle_text` : texte TLE valide (3 lignes) → retourne 1 `SatelliteTLE`
+- `parse_tle_text` : texte vide → retourne `[]`
+- `parse_tle_text` : lignes malformées (longueur < 69) → ignorées
+
+**API :**
+
+- `GET /api/satellites/tle` (sans params) → status 200, groupe `stations` par défaut
+- `GET /api/satellites/tle?group=gps-ops` → status 200, `count > 0`
+- `GET /api/satellites/tle?group=inconnu` → status 400
+- `GET /api/satellites/groups` → status 200, liste de 8 groupes
+- Réponse contient `group`, `count`, `satellites`
+- Chaque satellite a `name`, `line1`, `line2` ; `line1` commence par `"1 "`, `line2` par `"2 "`
+
 ### `tests/test_health.py` (priorité basse)
 
 - `GET /` → status 200, contient `status: "running"`

@@ -66,29 +66,28 @@ frontend/src/
 ├── main.tsx             # Point d'entrée React DOM
 ├── index.css            # Reset / variables CSS de base
 │
-├── components/          # Composants React (22+ fichiers)
-│   ├── SolarSystem.tsx       # Système solaire complet (8 planètes + Soleil)
-│   ├── Planet.tsx            # Planète générique (géométrie, textures, orbite)
-│   ├── Sun.tsx               # Soleil (PointLight + surface)
-│   ├── SaturnRings.tsx       # Anneaux de Saturne
-│   ├── OrbitLine.tsx         # Ligne d'orbite elliptique
+├── components/          # Composants React
+│   ├── SolarSystem.tsx       # Système solaire complet (Soleil, 8 planètes, orbites, anneaux Saturne)
+│   ├── AsteroidBelt.tsx      # Ceinture d'astéroïdes (instancedMesh, mode système)
+│   ├── KuiperBelt.tsx        # Ceinture de Kuiper (instancedMesh, mode système)
 │   ├── PlanetMoons.tsx       # Lunes orbitant une planète (20+ lunes)
-│   ├── Globe.tsx             # Sphère planète avec shader jour/nuit
+│   ├── Globe.tsx             # Sphère planète avec shader jour/nuit (CustomShaderMaterial)
+│   ├── ISS.tsx               # Modèle ISS + orbite (mode globe/Earth, SGP4)
 │   ├── MarsRovers.tsx        # Marqueurs 3D des 5 rovers martiens
-│   ├── RoverOverlay.tsx      # Overlay plein écran «Mission Control» (lazy)
+│   ├── RoverOverlay.tsx      # Overlay plein écran «Mission Control» (lazy-loaded)
 │   ├── RoverModel3D.tsx      # Modèle GLTF rover avec décodeur Draco
-│   ├── RoverPhotoGallery.tsx # Galerie photos rover
-│   ├── PlanetInfoCard.tsx    # Panneau info détaillé (Planètes)
-│   ├── Loader3D.tsx          # Écran de chargement
-│   ├── ISS.tsx               # Modèle ISS + orbite (mode globe/Earth)
+│   ├── RoverPhotoGallery.tsx # Galerie photos rover (placeholder)
+│   ├── SatelliteCoverage.tsx # Satellites en orbite (instancedMesh, SGP4, mode globe/Earth)
+│   ├── PlanetInfoCard.tsx    # Panneau info détaillé planète
+│   ├── Loader3D.tsx          # Écran de chargement global (Suspense)
 │   ├── NightSky.tsx          # Scène ciel nocturne (mode sky)
-│   ├── MilkyWay.tsx          # Dôme Voie Lactée
+│   ├── MilkyWay.tsx          # Dôme Voie Lactée (sphère inversée)
 │   ├── AzAltGrid.tsx         # Grille azimut/altitude
 │   ├── ConstellationPattern.tsx # Tracé lignes constellation
 │   ├── ConstellationGuide.tsx   # Flèche vers constellation hors-écran
 │   ├── EarthGuide.tsx           # Indicateur direction du sol
 │   ├── CompassRose.tsx          # Boussole
-│   ├── LocationMarker.tsx       # Marqueur point d'observation
+│   ├── LocationMarker.tsx       # Marqueur point d'observation sur globe
 │   ├── SidePanel.tsx            # Panneau latéral gauche
 │   ├── ConstellationSidebar.tsx # Barre recherche constellations
 │   ├── StarTooltip.tsx          # Tooltip étoile survolée
@@ -96,25 +95,26 @@ frontend/src/
 │   └── Effects.tsx              # Post-processing (bloom)
 │
 ├── stores/              # État global Zustand
-│   ├── useSkyStore.ts        # Mode de vue, étoiles, étoile sélectionnée
+│   ├── useSkyStore.ts           # Mode de vue, étoiles, planète sélectionnée, rovers, système solaire
 │   ├── useConstellationStore.ts # Constellations chargées, sélection
 │   ├── useObservationStore.ts   # Point d'observation courant
-│   └── useISSStore.ts           # Données ISS (TLE, position)
+│   ├── useISSStore.ts           # Données ISS (TLE, sélection)
+│   └── useSatelliteStore.ts     # TLE par groupe, groupes actifs, satellite sélectionné
 │
 ├── services/
 │   └── api.ts           # Client Axios vers le backend
 │
 ├── types/               # Interfaces TypeScript
-│   ├── planets.ts  # PlanetId, PLANETS_METADATA (8 planètes)
-│   ├── moons.ts    # MoonData, MOONS_DATA (20+ lunes)
-│   ├── rovers.ts   # RoverMetadata, RoverPosition, RoverFull (5 rovers)
-│   └── ...
+│   ├── planets.ts    # PlanetId, PLANETS_METADATA (8 planètes)
+│   ├── moons.ts      # MoonData, MOONS_DATA (20+ lunes)
+│   ├── rovers.ts     # RoverMetadata, RoverPosition, RoverFull (5 rovers)
+│   ├── iss.ts        # TLEData, ISSInfo
+│   └── satellite.ts  # SatelliteGroup, SatelliteTLE, SatelliteLiveInfo, SATELLITE_GROUP_META
 │
 └── utils/               # Fonctions utilitaires
     ├── planetaryEphemeris.ts # Wrapper astronomia → positions 3D planètes
-    ├── dayNightShader.ts     # GLSL shaders terminateur jour/nuit
-    ├── skyCoords.ts          # Conversions coordonnées célestes
-    └── ...
+    ├── dayNightShader.ts     # GLSL shaders terminateur jour/nuit (chunks séparés)
+    └── skyCoords.ts          # Conversions coordonnées célestes
 ```
 
 ---
@@ -200,59 +200,59 @@ Composant principal du mode système solaire. Orchestre le rendu de toutes les p
 **Fonctionnalités :**
 
 - 8 planètes (Mercure → Neptune) texturées et positionnées via `astronomia`
-- Lignes d'orbite elliptiques (optionnelles, contrôlables via `showOrbits`)
 - Soleil centralisé avec PointLight
-- Anneaux de Saturne (géométrie custom)
-- Lunes de chaque planète orbitant en temps réel
+- Anneaux de Saturne (géométrie plane avec texture map + `DoubleSide` + `alphaMap`)
+- Lignes d'orbite elliptiques (optionnelles, contrôlables via `showOrbits`)
+- Ceintures d'astéroïdes et de Kuiper (`AsteroidBelt`, `KuiperBelt`)
 - Rotation automatique du système (contrôlable via `isSystemRotating`)
 - Clic sur une planète → transition vers le mode `"globe"` avec cette planète
 
 **Calcul de positions :** via `astronomia` (Meeus Algorithms), temps réel selon le timestamp du store.
 
----
-
-### 4.2 Planet
-
-`components/Planet.tsx`
-
-Composant générique pour une planète (maille, texture, orbite, rotation).
-
-**Propriétés :**
-
-- Texture WebP (résolution adaptée selon la taille)
-- Rotation automatique (période de rotation réelle approximée)
-- Orbite elliptique autour du Soleil
-- LOD (Level of Detail) — segments de sphère réduits pour planètes lointaines
+> Note : `Planet`, `Sun`, `SaturnRings`, `OrbitLine` sont des sous-composants intégrés dans `SolarSystem.tsx`, non exposés comme fichiers séparés.
 
 ---
 
-### 4.3 Sun
+### 4.2 AsteroidBelt
 
-`components/Sun.tsx`
+`components/AsteroidBelt.tsx`
 
-Soleil : sphère texturée + PointLight directionnelle.
+Représentation 3D de la ceinture d'astéroïdes entre Mars et Jupiter (mode système uniquement).
 
-**Caractéristiques :**
-
-- Texture HDR (ou approximation par couleur)
-- Émission lumineuse toneMapped={false}
-- Lumière ponctuelle d'intensité variable
-- Animation légère de surface (si texture disponible)
+- `instancedMesh` pour la performance (milliers de points)
+- Distribution aléatoire dans un tore entre ~2.2 et ~3.2 UA
+- Couleur gris-brun semi-transparente
 
 ---
 
-### 4.4 SaturnRings
+### 4.3 KuiperBelt
 
-`components/SaturnRings.tsx`
+`components/KuiperBelt.tsx`
 
-Anneaux de Saturne : toroid flat mesh avec texture map.
+Représentation 3D de la ceinture de Kuiper au-delà de Neptune (mode système uniquement).
 
-**Géométrie :**
+- `instancedMesh`, distribution dans un tore entre ~30 et ~55 UA
+- Couleur bleutée semi-transparente
 
-- Rayon intérieur : ~7000 km
-- Rayon extérieur : ~140 000 km
-- Inclinaison : 26.73°
-- Opacité variable selon l'éclairage
+---
+
+### 4.4 SatelliteCoverage
+
+`components/SatelliteCoverage.tsx`
+
+Satellites en orbite autour de la Terre en temps réel. Monté uniquement si `selectedPlanet === "earth"` ET `showSatellites === true`.
+
+**Fonctionnalités :**
+
+- Propagation SGP4 via `satellite.js` (`twoline2satrec` + `propagate`) — throttlée à 1×/s
+- `instancedMesh` (1 mesh par groupe de couleur) pour la performance (jusqu'à ~5 000 satellites)
+- Code couleur par groupe : stations (cyan), Starlink (bleu), GPS (vert), météo (jaune), science (magenta)
+- Altitude amplifiée ×2 pour la lisibilité visuelle
+- Taille des points en pixels (indépendante du zoom, `sizeAttenuation: false`)
+- Satellite sélectionné au clic → `useSatelliteStore.setSelectedSatellite()`
+- Chargement des TLE depuis `useSatelliteStore.fetchGroup()` au montage
+
+**Groupes affichables :** `stations`, `starlink`, `gps-ops`, `weather`, `resource`, `science`, `galileo`
 
 ---
 
@@ -359,7 +359,7 @@ Sphère texturée représentant la Terre. Charge les textures WebP depuis `publi
 
 ---
 
-### 4.2 ISS
+### 4.10 ISS
 
 `components/ISS.tsx`
 
@@ -373,11 +373,11 @@ Sphère texturée représentant la Terre. Charge les textures WebP depuis `publi
 - Clic → affiche les informations (altitude, vitesse, position) dans le `SidePanel`
 - Taille du modèle adaptée au zoom (scale factor)
 
-**Store :** `useISSStore` (position ECI, données ISS, chargement TLE on-demand).
+**Store :** `useISSStore` (données TLE, sélection, chargement on-demand).
 
 ---
 
-### 4.3 NightSky
+### 4.11 NightSky
 
 `components/NightSky.tsx`
 
@@ -393,7 +393,7 @@ Scène principale du mode ciel. Orchestre tous les sous-composants.
 
 ---
 
-### 4.4 MilkyWay
+### 4.12 MilkyWay
 
 `components/MilkyWay.tsx`
 
@@ -405,7 +405,7 @@ Sphère inversée (`side: THREE.BackSide`) avec texture équirectangulaire (2:1)
 
 ---
 
-### 4.5 AzAltGrid
+### 4.13 AzAltGrid
 
 `components/AzAltGrid.tsx`
 
@@ -418,7 +418,7 @@ Grille azimut/altitude en coordonnées horizontales locales.
 
 ---
 
-### 4.6 ConstellationPattern
+### 4.14 ConstellationPattern
 
 `components/ConstellationPattern.tsx`
 
@@ -430,23 +430,11 @@ Trace les lignes d'une constellation sélectionnée dans la scène 3D.
 
 ---
 
-### 4.7 LocationMarker
+### 4.15 LocationMarker
 
 `components/LocationMarker.tsx`
 
 Affiche un marqueur sur le globe à la position du point d'observation sélectionné.
-
----
-
-### 4.10 Autres composants 3D (existants)
-
-- **ISS.tsx** — Station Spatiale Internationale (TLE-based, mode globe/Earth)
-- **NightSky.tsx** — Rendu 5000+ étoiles (mode sky)
-- **MilkyWay.tsx** — Sphère inversée texture équirectangulaire
-- **AzAltGrid.tsx** — Grille azimut/altitude (mode sky)
-- **ConstellationPattern.tsx** — Tracé des lignes constellation (mode sky)
-- **LocationMarker.tsx** — Point d'observation sur le globe
-- **Effects.tsx** — Post-processing bloom
 
 ---
 
@@ -618,6 +606,26 @@ Gère le point d'observation courant (ville sélectionnée dans le SidePanel).
 
 ---
 
+### 6.5 useSatelliteStore
+
+| Champ                | Type                         | Description                                     |
+| -------------------- | ---------------------------- | ----------------------------------------------- |
+| `showSatellites`     | `boolean`                    | Toggle global d'affichage (défaut `false`)      |
+| `activeGroups`       | `Set<SatelliteGroup>`        | Groupes actifs (défaut : `stations`, `gps-ops`) |
+| `tleByGroup`         | `Record<string, SatelliteTLE[]>` | TLE cachés par groupe                       |
+| `loadingGroups`      | `Set<string>`                | Groupes en cours de chargement                  |
+| `error`              | `string \| null`             | Erreur de fetch                                 |
+| `selectedSatellite`  | `SatelliteLiveInfo \| null`  | Satellite sélectionné au clic                   |
+
+**Actions :**
+
+- `toggleSatellites()` — active/désactive l'affichage global
+- `toggleGroup(group)` — ajoute ou retire un groupe des groupes actifs
+- `fetchGroup(group)` — charge les TLE d'un groupe si non déjà en cache
+- `setSelectedSatellite(info)` / `clearSelection()` — sélection satellite
+
+---
+
 ## 7. Service API
 
 `frontend/src/services/api.ts`
@@ -648,9 +656,16 @@ astronomyService.getObservationPoints()
 astronomyService.getIssTle()
     → GET /api/iss/tle
 
-// Rovers (NEW)
+// Rovers
 astronomyService.getRoverPositions()
     → GET /api/rovers/positions
+
+// Satellites (TLE proxy CelesTrak)
+astronomyService.getSatelliteTLEs(group)
+    → GET /api/satellites/tle?group={group}
+
+astronomyService.getSatelliteGroups()
+    → GET /api/satellites/groups
 ```
 
 ---

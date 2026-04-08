@@ -605,69 +605,123 @@ Le démarrage de l'application en mode "Système Solaire" requiert le chargement
 
 ---
 
-#### Tâche 7.4 — Anneaux de Jupiter, Uranus et Neptune en mode Système
+> **Note** : Les tâches 7.4 (anneaux Jupiter/Uranus/Neptune), V2-8 (planètes mode ciel) et V2-9 (polish & tests) ont été reportées en **V3**. Voir `docs/Plan-V3.md`.
 
-**Description** : Ajouter les anneaux planétaires manquants. Saturne en dispose déjà ; les 3 autres géantes ont des anneaux moins visibles mais réels.
+---
 
-| Planète | Anneaux | Caractéristiques visuelles |
+## 8. VALIDATION & DÉPLOIEMENT V2
+
+### 8.1 Checklist de validation avant merge sur `main`
+
+#### Tests backend
+```bash
+cd backend
+python -m pytest tests/ -v                          # tous les tests unitaires
+python -m pytest tests/ --cov=app --cov-report=term-missing  # couverture
+```
+- [ ] Tous les tests passent (0 failure, 0 error)
+- [ ] Couverture > 80% sur `app/services/` et `app/repositories/`
+- [ ] Endpoint `GET /api/rovers/positions` répond 200
+- [ ] Endpoint `GET /api/satellites/tle?group=stations` répond 200
+- [ ] Endpoint `GET /api/stars/visible` répond 200 avec cache TTL actif
+
+#### Tests frontend
+```bash
+cd frontend
+npx vitest run
+```
+- [ ] Tous les tests Vitest passent
+- [ ] Pas d'erreur TypeScript : `npx tsc --noEmit`
+- [ ] Pas d'erreur ESLint : `npx eslint src/`
+
+#### Vérifications fonctionnelles manuelles
+- [ ] Mode Globe — terminateur jour/nuit synchronisé avec le slider temporel
+- [ ] Mode Globe — ISS visible et animée en temps réel
+- [ ] Mode Globe — toggle Satellites actif, `instancedMesh` sans drop de FPS
+- [ ] Mode Globe — clic Mars → overlay Rovers s'ouvre (slide-down), fermeture propre
+- [ ] Mode Globe — lunes visibles au clic sur une planète (Jupiter, Saturne, Terre…)
+- [ ] Mode Système Solaire — 8 planètes + Soleil positionnés, orbites visibles
+- [ ] Mode Système Solaire — clic planète → panneau InfoCard + zoom caméra
+- [ ] Mode Système Solaire — slider temporel accélère les orbites visuellement
+- [ ] Mode Ciel — 5 000+ étoiles affichées, constellations tracées, ISS visible
+
+#### Performances
+- [ ] 60 FPS stable en mode Système Solaire (vérifier avec Chrome DevTools > Performance)
+- [ ] Aucune fuite mémoire après 5 minutes en mode Système (heap stable)
+- [ ] Taille bundle frontend < 2 Mo gzippé : `npm run build && npx vite-bundle-visualizer`
+
+---
+
+### 8.2 Préparation du merge
+
+```bash
+# Depuis la branche v2 — s'assurer que tout est committé
+git status
+git add <fichiers modifiés>
+git commit -m "feat: finalisation V2 — lunes, rovers, satellites, terminateur"
+
+# Récupérer les derniers changements de main
+git fetch origin main
+git rebase origin/main   # ou merge selon la préférence
+
+# Résoudre les conflits éventuels, puis :
+git push origin v2
+```
+
+Ouvrir une Pull Request `v2 → main` sur GitHub :
+- Titre : `feat: V2 — Système Solaire, terminateur, lunes, rovers, satellites`
+- Description : lister les fonctionnalités livrées (V2-1 à V2-7.3)
+- Reviewer : soi-même ou un pair
+
+---
+
+### 8.3 Déploiement
+
+Le déploiement est **automatique** via les webhooks Railway (backend) et Vercel (frontend) déclenchés par le push sur `main`.
+
+#### Étapes
+
+1. **Merger la PR** `v2 → main` sur GitHub (ou merge direct si solo)
+   ```bash
+   git checkout main
+   git merge v2 --no-ff -m "Merge V2 : système solaire, terminateur, lunes, rovers, satellites"
+   git push origin main
+   ```
+
+2. **Vérifier le déploiement Railway (backend)**
+   - Dashboard : `railway.app` → projet → service backend
+   - Logs de build : `pip install -r requirements.txt` doit passer sans erreur
+   - Vérifier que la migration SQLite (ou seed PostgreSQL si applicable) s'est exécutée
+   - Health check : `curl https://<railway-url>/health` → `{"status": "ok"}`
+
+3. **Vérifier le déploiement Vercel (frontend)**
+   - Dashboard : `vercel.com` → projet → dernier déploiement
+   - Build log : `npm run build` sans erreur TypeScript
+   - URL de preview Vercel disponible avant promotion en production
+   - Vérifier `VITE_API_URL` pointe bien vers l'URL Railway de production
+
+4. **Smoke test en production**
+   - [ ] Page se charge sans erreur console (F12)
+   - [ ] Mode Globe opérationnel (terminateur visible)
+   - [ ] Mode Système Solaire opérationnel (planètes positionnées)
+   - [ ] Overlay Rovers accessible depuis Mars
+   - [ ] Endpoint satellites ne génère pas d'erreur CORS
+
+#### Variables d'environnement à vérifier
+
+| Service | Variable | Valeur attendue |
 |---|---|---|
-| **Jupiter** | Anneau principal + halo + gossamer | Très ténus, semi-transparents, brun-rougeâtre |
-| **Uranus** | 13 anneaux distincts (ε, δ, γ…) | Fins, sombres, inclinés à 97° (axe couché) |
-| **Neptune** | 5 arches/anneaux (Adams, Le Verrier…) | Très ténus, légèrement bleutés |
-
-**Sources textures** :
-- [Solar System Scope](https://www.solarsystemscope.com/textures/) : ring maps disponibles pour Uranus et Neptune
-- [NASA JPL Photojournal](https://photojournal.jpl.nasa.gov/) : images Voyager 2 des anneaux d'Uranus et Neptune
-- Pour Jupiter : texture procédurale semi-transparente acceptable (anneaux quasi-invisibles à l'œil)
-
-**Implémentation** :
-- Réutiliser la logique de `SaturnRings.tsx` (ring plane avec texture + `DoubleSide` + `alphaMap`)
-- Particularité Uranus : incliner le ring plane à ~97° (axe de rotation couché)
-- Particularité Neptune : arches d'intensité variable → possible via texture avec zones plus denses
-- Intégrer les rings dans `SolarSystem.tsx` aux conditions `planetId === "jupiter"` etc.
-
-**Tâches** :
-- [ ] Télécharger/créer textures ring maps pour Jupiter, Uranus, Neptune
-- [ ] Créer ou étendre `PlanetRings.tsx` en composant générique (remplace `SaturnRings.tsx`)
-- [ ] Appliquer l'inclinaison correcte pour Uranus
-- [ ] Tester la transparence et le rendu en mode système
+| Vercel | `VITE_API_URL` | URL Railway prod (ex: `https://nightsky-api.up.railway.app`) |
+| Railway | `DATABASE_URL` | URL PostgreSQL Railway (ou chemin SQLite si non migré) |
+| Railway | `ALLOWED_ORIGINS` | URL Vercel prod (ex: `https://nightsky.vercel.app`) |
 
 ---
 
-### SEMAINE V2-8 : PLANÈTES EN MODE CIEL NOCTURNE
+### 8.4 Après déploiement
 
-**Objectif** : Planètes visibles comme objets brillants dans la vue ciel
-
-**Tâches** :
-
-1. Calculer az/alt des planètes depuis le point d'observation sélectionné (via position RA/Dec + AstroPy backend OU calcul local)
-2. Modifier `NightSky.tsx` : ajouter les planètes comme points distincts (plus grands, couleurs spécifiques)
-3. Tooltip au hover : nom + magnitude apparente calculée
-4. Panneau détails au clic (réutiliser InfoCard de V2-4)
-5. Exclure le Soleil du mode nuit (avertissement si en dessous de l'horizon)
-
-**Livrable** :
-
-- Planètes visibles dans ciel nocturne à leur position réelle depuis le point d'obs sélectionné
-
----
-### SEMAINE V2-9 : POLISH, OPTIMISATIONS & TESTS
-
-**Objectif** : Qualité production, performances vérifiées, UX cohérente
-
-**Tâches** :
-
-1. Benchmark GPU : 60 FPS constant mode solaire sur machine cible
-2. Compresser toutes les textures planètes en WebP
-3. Implémenter LOD planètes lointaines
-4. Lazy loading textures planètes (uniquement si mode solaire activé)
-5. Animations de transition polish (zoom, fade, caméra cinématique)
-6. Tests : précision positions planètes, terminateur cohérent avec réalité
-7. Responsive : contrôles tactiles mode système solaire
-8. Mettre à jour `README.md` + `QUICKSTART.md`
-
-**Livrable** :
-
-- V2 complète, stable, performante, documentée
+- [ ] Créer un tag Git de release : `git tag v2.0.0 && git push origin v2.0.0`
+- [ ] Mettre à jour le `README.md` avec les nouvelles fonctionnalités V2
+- [ ] Archiver les notes de `Plan-V2.md` (ce fichier reste en référence)
+- [ ] Ouvrir la branche `v3` et commencer par V3-1 (Artémis 2) selon `Plan-V3.md`
 
 ---
