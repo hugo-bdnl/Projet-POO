@@ -8,7 +8,7 @@
 | **Frontend** | React 19, TypeScript 5.9, Vite 7, Three.js 0.182, React Three Fiber 9, Zustand 5 |
 | **Calculs astro frontend** | `astronomia` (Meeus Algorithms) — positions planétaires 100% client |
 | **Propagateur ISS** | `satellite.js` (SGP4) — position ISS côté client |
-| **Deploy** | Railway (backend) / Vercel (frontend) — auto-deploy sur push `main` |
+| **Deploy** | Render (backend) / Vercel (frontend) — auto-deploy sur push `main` |
 
 ## Architecture backend — 4 couches strictes
 
