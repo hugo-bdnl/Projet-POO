@@ -1,0 +1,207 @@
+.transition-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 9999;
+  background-color: rgba(5, 5, 10, 0.95);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #00f0ff;
+  font-family: "Courier New", Courier, monospace;
+  overflow: hidden;
+  backdrop-filter: blur(8px);
+}
+
+.scanlines {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%);
+  background-size: 100% 4px;
+  pointer-events: none;
+  opacity: 0.6;
+}
+
+.transition-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  z-index: 2;
+  text-shadow: 0 0 10px rgba(0, 240, 255, 0.5);
+}
+
+.spinner-container {
+  position: relative;
+  width: 120px;
+  height: 120px;
+  margin-bottom: 30px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.futuristic-spinner {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  border: 4px solid transparent;
+  border-top-color: #00f0ff;
+  border-bottom-color: #00f0ff;
+  animation:
+    spin 1.5s linear infinite,
+    glow 2s ease-in-out infinite alternate;
+}
+
+.futuristic-spinner::before {
+  content: "";
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  right: 10px;
+  bottom: 10px;
+  border-radius: 50%;
+  border: 2px dashed rgba(0, 240, 255, 0.5);
+  animation: spin-reverse 3s linear infinite;
+}
+
+.spinner-core {
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  background-color: #00f0ff;
+  border-radius: 50%;
+  box-shadow:
+    0 0 20px #00f0ff,
+    0 0 40px #00f0ff;
+  animation: pulse 1s ease-in-out infinite alternate;
+}
+
+.transition-title {
+  font-size: 24px;
+  letter-spacing: 4px;
+  margin-bottom: 15px;
+  animation: flicker 2s infinite;
+}
+
+.planet-target {
+  font-size: 18px;
+  margin-bottom: 30px;
+  opacity: 0.8;
+}
+
+.planet-target .highlight {
+  color: #fff;
+  font-weight: bold;
+  text-shadow: 0 0 15px #fff;
+}
+
+.progress-bar-container {
+  width: 400px;
+  height: 15px;
+  background-color: rgba(0, 240, 255, 0.1);
+  border: 1px solid rgba(0, 240, 255, 0.4);
+  margin-bottom: 15px;
+  position: relative;
+  overflow: hidden;
+}
+
+.progress-bar-container::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  right: 0;
+  background: repeating-linear-gradient(
+    45deg,
+    transparent,
+    transparent 10px,
+    rgba(0, 0, 0, 0.2) 10px,
+    rgba(0, 0, 0, 0.2) 20px
+  );
+  z-index: 2;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #0066ff, #00f0ff);
+  box-shadow: 0 0 15px #00f0ff;
+  position: relative;
+  z-index: 1;
+  transition: width 0.1s linear;
+}
+
+.progress-text {
+  font-size: 14px;
+  letter-spacing: 2px;
+  opacity: 0.7;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes spin-reverse {
+  0% {
+    transform: rotate(360deg);
+  }
+  100% {
+    transform: rotate(0deg);
+  }
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(0.8);
+    opacity: 0.5;
+  }
+  100% {
+    transform: scale(1.2);
+    opacity: 1;
+  }
+}
+
+@keyframes glow {
+  0% {
+    box-shadow:
+      0 0 5px rgba(0, 240, 255, 0.2),
+      inset 0 0 5px rgba(0, 240, 255, 0.2);
+  }
+  100% {
+    box-shadow:
+      0 0 20px rgba(0, 240, 255, 0.6),
+      inset 0 0 20px rgba(0, 240, 255, 0.6);
+  }
+}
+
+@keyframes flicker {
+  0%,
+  19.999%,
+  22%,
+  62.999%,
+  64%,
+  64.999%,
+  70%,
+  100% {
+    opacity: 1;
+  }
+  20%,
+  21.999%,
+  63%,
+  63.999%,
+  65%,
+  69.999% {
+    opacity: 0.4;
+  }
+}

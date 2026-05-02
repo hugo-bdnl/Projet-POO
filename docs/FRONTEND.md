@@ -22,31 +22,37 @@
 
 ## 1. Architecture générale
 
-L'application est une **Single Page Application** React qui embarque un canvas WebGL Three.js pour le rendu 3D. Elle s'organise autour de deux modes de vue mutuellement exclusifs, d'une couche de stores Zustand pour l'état global, et d'un service API centralisé.
+L'application est une **Single Page Application** React qui embarque un canvas WebGL Three.js pour le rendu 3D. Elle s'organise autour de trois modes de vue mutuellement exclusifs (système solaire, globe planétaire, ciel nocturne), d'une couche de stores Zustand pour l'état global, et d'un service API centralisé.
 
 ```
-┌─────────────────────────────────────────────────────┐
-│                        App.tsx                      │
-│  ┌──────────────┐  ┌────────────────┐               │
-│  │  HTML UI     │  │   WebGL Canvas │               │
-│  │  SidePanel   │  │                │               │
-│  │  ConsSidebar │  │  MODE GLOBE    │               │
-│  │  TimeSlider  │  │  └─ Globe.tsx  │               │
-│  └──────────────┘  │     └─ ISS.tsx │               │
-│                    │  MODE SKY      │               │
-│  ┌──────────────┐  │  └─ NightSky   │               │
-│  │  Stores      │  │     ├─ Stars   │               │
-│  │  Zustand     │  │     ├─ Cons.   │               │
-│  │  useSkyStore │  │     ├─ MilkyWay│               │
-│  │  useCons..   │  │     └─ AzAlt  │               │
-│  │  useObs..    │  │  OverlayHUD    │               │
-│  │  useISS..    │  │  (tooltip, fx) │               │
-│  └──────────────┘  └────────────────┘               │
-└─────────────────────────────────────────────────────┘
-              │
-   astronomyService (Axios)
-              │
-       Backend FastAPI :8000
+┌──────────────────────────────────────────────────────────────┐
+│                         App.tsx                              │
+│  ┌──────────────────┐  ┌──────────────────────┐              │
+│  │   HTML UI        │  │   WebGL Canvas 3D    │              │
+│  │  SidePanel       │  │                      │              │
+│  │  ConsSidebar     │  │  MODE "system"       │              │
+│  │  TimeSlider      │  │  └─ SolarSystem.tsx  │              │
+│  │  (lazy)          │  │     ├─ Planet, Sun   │              │
+│  │  RoverOverlay    │  │     ├─ SaturnRings   │              │
+│  └──────────────────┘  │     └─ PlanetMoons   │              │
+│                        │                      │              │
+│  ┌──────────────────┐  │  MODE "globe"        │              │
+│  │  Stores          │  │  └─ Globe.tsx        │              │
+│  │  Zustand         │  │     ├─ ISS.tsx       │              │
+│  │  useSkyStore     │  │     ├─ MarsRovers    │              │
+│  │  useCons..       │  │     └─ PlanetMoons   │              │
+│  │  useObs..        │  │                      │              │
+│  │  useISS..        │  │  MODE "sky"          │              │
+│  │  useCons..       │  │  └─ NightSky.tsx     │              │
+│  │  useObs..        │  │     ├─ Stars         │              │
+│  └──────────────────┘  │     ├─ MilkyWay      │              │
+│                        │     └─ AzAltGrid     │              │
+│                        └──────────────────────┘              │
+└──────────────────────────────────────────────────────────────┘
+                         │
+            astronomyService (Axios)
+                         │
+         Backend FastAPI :8000
 ```
 
 ---
@@ -55,61 +61,107 @@ L'application est une **Single Page Application** React qui embarque un canvas W
 
 ```
 frontend/src/
-├── App.tsx              # Composant racine, canvas, routing modes
-├── App.css              # Styles globaux (HUD, panels, tooltips, toast)
+├── App.tsx              # Composant racine, canvas, CameraController, routing modes
+├── App.css              # Styles globaux (HUD, panels, overlays, tooltips)
 ├── main.tsx             # Point d'entrée React DOM
 ├── index.css            # Reset / variables CSS de base
 │
-├── components/          # Composants React (15 fichiers)
-│   ├── Globe.tsx        # Sphère terrestre 3D (mode globe)
-│   ├── ISS.tsx          # Modèle ISS + orbite (mode globe)
-│   ├── NightSky.tsx     # Scène ciel nocturne (mode sky)
-│   ├── MilkyWay.tsx     # Dôme Voie Lactée (mode sky)
-│   ├── AzAltGrid.tsx    # Grille azimut/altitude (mode sky)
-│   ├── ConstellationPattern.tsx # Lignes de constellation (mode sky)
-│   ├── ConstellationGuide.tsx   # Indicateur constellation à l'écran
-│   ├── EarthGuide.tsx           # Indicateur direction Terre (mode sky)
-│   ├── CompassRose.tsx          # Boussole (mode sky)
-│   ├── LocationMarker.tsx       # Marqueur point d'observation (globe)
-│   ├── SidePanel.tsx    # Panneau latéral (paramètres, étoile sélectionnée)
-│   ├── ConstellationSidebar.tsx # Sidebar recherche constellations (globe)
-│   ├── StarTooltip.tsx  # Tooltip étoile survolée (3D overlay)
-│   ├── TimeSlider.tsx   # Contrôle temporel (sélecteur de date/heure)
-│   └── Effects.tsx      # Post-processing (bloom, etc.)
+├── components/          # Composants React
+│   ├── SolarSystem.tsx       # Système solaire complet (Soleil, 8 planètes, orbites, anneaux Saturne)
+│   ├── AsteroidBelt.tsx      # Ceinture d'astéroïdes (instancedMesh, mode système)
+│   ├── KuiperBelt.tsx        # Ceinture de Kuiper (instancedMesh, mode système)
+│   ├── PlanetMoons.tsx       # Lunes orbitant une planète (20+ lunes)
+│   ├── Globe.tsx             # Sphère planète avec shader jour/nuit (CustomShaderMaterial)
+│   ├── ISS.tsx               # Modèle ISS + orbite (mode globe/Earth, SGP4)
+│   ├── MarsRovers.tsx        # Marqueurs 3D des 5 rovers martiens
+│   ├── RoverOverlay.tsx      # Overlay plein écran «Mission Control» (lazy-loaded)
+│   ├── RoverModel3D.tsx      # Modèle GLTF rover avec décodeur Draco
+│   ├── RoverPhotoGallery.tsx # Galerie photos rover (placeholder)
+│   ├── SatelliteCoverage.tsx # Satellites en orbite (instancedMesh, SGP4, mode globe/Earth)
+│   ├── PlanetInfoCard.tsx    # Panneau info détaillé planète
+│   ├── Loader3D.tsx          # Écran de chargement global (Suspense)
+│   ├── NightSky.tsx          # Scène ciel nocturne (mode sky)
+│   ├── MilkyWay.tsx          # Dôme Voie Lactée (sphère inversée)
+│   ├── AzAltGrid.tsx         # Grille azimut/altitude
+│   ├── ConstellationPattern.tsx # Tracé lignes constellation
+│   ├── ConstellationGuide.tsx   # Flèche vers constellation hors-écran
+│   ├── EarthGuide.tsx           # Indicateur direction du sol
+│   ├── CompassRose.tsx          # Boussole
+│   ├── LocationMarker.tsx       # Marqueur point d'observation sur globe
+│   ├── SidePanel.tsx            # Panneau latéral gauche
+│   ├── ConstellationSidebar.tsx # Barre recherche constellations
+│   ├── StarTooltip.tsx          # Tooltip étoile survolée
+│   ├── TimeSlider.tsx           # Curseur temporel
+│   └── Effects.tsx              # Post-processing (bloom)
 │
 ├── stores/              # État global Zustand
-│   ├── useSkyStore.ts        # Mode de vue, étoiles, étoile sélectionnée
+│   ├── useSkyStore.ts           # Mode de vue, étoiles, planète sélectionnée, rovers, système solaire
 │   ├── useConstellationStore.ts # Constellations chargées, sélection
 │   ├── useObservationStore.ts   # Point d'observation courant
-│   └── useISSStore.ts           # Données ISS (TLE, position)
+│   ├── useISSStore.ts           # Données ISS (TLE, sélection)
+│   └── useSatelliteStore.ts     # TLE par groupe, groupes actifs, satellite sélectionné
 │
 ├── services/
 │   └── api.ts           # Client Axios vers le backend
 │
 ├── types/               # Interfaces TypeScript
+│   ├── planets.ts    # PlanetId, PLANETS_METADATA (8 planètes)
+│   ├── moons.ts      # MoonData, MOONS_DATA (20+ lunes)
+│   ├── rovers.ts     # RoverMetadata, RoverPosition, RoverFull (5 rovers)
+│   ├── iss.ts        # TLEData, ISSInfo
+│   └── satellite.ts  # SatelliteGroup, SatelliteTLE, SatelliteLiveInfo, SATELLITE_GROUP_META
+│
 └── utils/               # Fonctions utilitaires
+    ├── planetaryEphemeris.ts # Wrapper astronomia → positions 3D planètes
+    ├── dayNightShader.ts     # GLSL shaders terminateur jour/nuit (chunks séparés)
+    └── skyCoords.ts          # Conversions coordonnées célestes
 ```
 
 ---
 
 ## 3. Modes de vue
 
-L'application possède deux modes exclusifs, contrôlés par `useSkyStore.viewMode` :
+L'application possède trois modes exclusifs, contrôlés par `useSkyStore.viewMode` :
 
-### Mode `"globe"` — Vue Globe
+### Mode `"system"` — Système Solaire (par défaut)
 
-**Caméra :** position `[0, 0, 2.5]`, orbite entre `2.5` et `6` unités de distance.
+**Caméra :** position `[0, 45, 60]` (vue de dessus reculée pour voir l'ensemble du système solaire).
 
 **Composants actifs :**
 
-- `Globe` — sphère terrestre texturée
-- `ISS` — modèle 3D faible-poly de l'ISS avec ligne orbitale
-- `LocationMarker` — marqueur de la ville d'observation
-- `ConstellationSidebar` — barre de recherche/sélection de constellations (HTML)
-- `SidePanel` — panneau de configuration (HTML)
-- `TimeSlider` — curseur temporel (HTML)
+- `SolarSystem` — Soleil + 8 planètes avec orbites elliptiques
+- `PlanetMoons` — Lunes orbitant autour des planètes gazeuses (Jupiter, Saturne, Uranus, Neptune)
+- `PlanetInfoCard` — Panneau détail au clic sur une planète
+- Rotation automatique du système solaire (contrôlable via `isSystemRotating`, vitesse en `systemRotationSpeed`)
+- Affichage/masquage des orbites (toggle `showOrbits`)
 
-**Lumière directionnelle :** `position=[5, 3, 5], intensity=2` (simule le Soleil).
+**Interactions :**
+
+- Clic sur une planète → transition vers le mode `"globe"` avec zoom sur cette planète
+- TimeSlider pour modifier le timestamp — les positions et orbites des lunes se mettent à jour
+
+---
+
+### Mode `"globe"` — Vue Globe (planète détaillée)
+
+**Caméra :** position `[0, 0, ~2.5]` (distance ajustée selon la taille visuelle de la planète), orbite entre `2.5` et `6` unités.
+
+**Planet:** Affiche la planète actuellement sélectionnée (par défaut Terre).
+
+**Composants actifs :**
+
+- `Globe` — sphère texturée (Terre ou autre planète selon sélection) avec shader dynamique jour/nuit
+- `ISS` — modèle 3D faible-poly + orbite (pour la Terre uniquement)
+- `LocationMarker` — marqueur du point d'observation sur le globe
+- `PlanetMoons` — lunes orbitant la planète sélectionnée
+- `MarsRovers` — marqueurs 3D des rovers martiens sur Mars
+- `PlanetInfoCard` — panneau info détaillé de la planète
+- `ConstellationSidebar` — barre de recherche de constellations (HTML, mode Terre uniquement)
+- `SidePanel` — panneau latéral (configuration, infos sélection)
+- `TimeSlider` — curseur temporel
+- `RoverOverlay` — overlay plein écran «Mission Control» (chargé lazy, 3 colonnes : modèle 3D | infos | photos)
+
+**Lumière directionnelle :** `position=[5, 3, 5], intensity=2` (simule le Soleil depuis la caméra).
 
 ---
 
@@ -139,7 +191,161 @@ Tous les composants listés ici fonctionnent **dans** le `<Canvas>` React Three 
 
 ---
 
-### 4.1 Globe
+### 4.1 SolarSystem
+
+`components/SolarSystem.tsx`
+
+Composant principal du mode système solaire. Orchestre le rendu de toutes les planètes, du Soleil, des orbites et des lunes.
+
+**Fonctionnalités :**
+
+- 8 planètes (Mercure → Neptune) texturées et positionnées via `astronomia`
+- Soleil centralisé avec PointLight
+- Anneaux de Saturne (géométrie plane avec texture map + `DoubleSide` + `alphaMap`)
+- Lignes d'orbite elliptiques (optionnelles, contrôlables via `showOrbits`)
+- Ceintures d'astéroïdes et de Kuiper (`AsteroidBelt`, `KuiperBelt`)
+- Rotation automatique du système (contrôlable via `isSystemRotating`)
+- Clic sur une planète → transition vers le mode `"globe"` avec cette planète
+
+**Calcul de positions :** via `astronomia` (Meeus Algorithms), temps réel selon le timestamp du store.
+
+> Note : `Planet`, `Sun`, `SaturnRings`, `OrbitLine` sont des sous-composants intégrés dans `SolarSystem.tsx`, non exposés comme fichiers séparés.
+
+---
+
+### 4.2 AsteroidBelt
+
+`components/AsteroidBelt.tsx`
+
+Représentation 3D de la ceinture d'astéroïdes entre Mars et Jupiter (mode système uniquement).
+
+- `instancedMesh` pour la performance (milliers de points)
+- Distribution aléatoire dans un tore entre ~2.2 et ~3.2 UA
+- Couleur gris-brun semi-transparente
+
+---
+
+### 4.3 KuiperBelt
+
+`components/KuiperBelt.tsx`
+
+Représentation 3D de la ceinture de Kuiper au-delà de Neptune (mode système uniquement).
+
+- `instancedMesh`, distribution dans un tore entre ~30 et ~55 UA
+- Couleur bleutée semi-transparente
+
+---
+
+### 4.4 SatelliteCoverage
+
+`components/SatelliteCoverage.tsx`
+
+Satellites en orbite autour de la Terre en temps réel. Monté uniquement si `selectedPlanet === "earth"` ET `showSatellites === true`.
+
+**Fonctionnalités :**
+
+- Propagation SGP4 via `satellite.js` (`twoline2satrec` + `propagate`) — throttlée à 1×/s
+- `instancedMesh` (1 mesh par groupe de couleur) pour la performance (jusqu'à ~5 000 satellites)
+- Code couleur par groupe : stations (cyan), Starlink (bleu), GPS (vert), météo (jaune), science (magenta)
+- Altitude amplifiée ×2 pour la lisibilité visuelle
+- Taille des points en pixels (indépendante du zoom, `sizeAttenuation: false`)
+- Satellite sélectionné au clic → `useSatelliteStore.setSelectedSatellite()`
+- Chargement des TLE depuis `useSatelliteStore.fetchGroup()` au montage
+
+**Groupes affichables :** `stations`, `starlink`, `gps-ops`, `weather`, `resource`, `science`, `galileo`
+
+---
+
+### 4.5 PlanetMoons
+
+`components/PlanetMoons.tsx`
+
+Système de lunes orbitant une planète donnée (10+ lunes pour Jupiter/Saturne).
+
+**Fonctionnalités :**
+
+- Orbites dans l'espace local de la planète (rayon = 1)
+- Scaling logarithmique pour garder petites lunes lisibles
+- Position keplerienne mise à jour avec le timestamp
+- Tooltips au survol : nom, distance, période, rayon
+- Support des orbites rétrogrades (Triton : periodDays < 0)
+- Inclinaison orbitale respectée
+
+**Lunes disponibles :**
+
+- **Terre :** Lune
+- **Mars :** Phobos, Deimos
+- **Jupiter :** Io, Europa, Ganymède, Callisto
+- **Saturne :** Encelade, Téthys, Dioné, Rhéa, Titan
+- **Uranus :** Miranda, Ariel, Umbriel, Titania, Obéron
+- **Neptune :** Triton
+
+---
+
+### 4.6 MarsRovers
+
+`components/MarsRovers.tsx`
+
+Marqueurs 3D des 5 rovers martiens sur la surface de Mars.
+
+**Fonctionnalités :**
+
+- Marqueurs lumineux (noyau + halo glow)
+- Couleur par rover (NASA orange, CNSA rouge, etc.)
+- Animation d'échelle au survol/sélection
+- Clic → déclenche le RoverOverlay (lazy-loaded)
+- Positions dynamiques depuis le backend (`GET /api/rovers/positions`)
+- Fallback aux positions par défaut si backend indisponible
+
+**Rovers affichés :**
+
+- Curiosity (NASA/MSL, actif)
+- Perseverance (NASA/Mars 2020, actif)
+- Opportunity (NASA/MER-B, inactif)
+- Spirit (NASA/MER-A, inactif)
+- Zhurong (CNSA, inactif)
+
+---
+
+### 4.7 RoverOverlay
+
+`components/RoverOverlay.tsx` (lazy-loaded via `React.lazy()`)
+
+Overlay plein écran déclenché au clic sur un rover. Layout 3 colonnes : modèle 3D | infos | photos.
+
+**Structure :**
+
+1. **Header :** nom du rover + couleur agence + bouton fermer
+2. **Colonne gauche (1/3) :** Canvas R3F avec modèle GLTF rover (rotation auto)
+3. **Colonne centre (1.2/3) :** infos mission (site, dates, lat/lon, description)
+4. **Colonne droite (1/3) :** galerie photos ou placeholder
+
+**Animation :**
+
+- Entrée : slide-down depuis le haut (500ms cubic-bezier)
+- Fermeture : reverse + setState delayed
+- Fond : semi-transparent avec blur
+
+---
+
+### 4.8 RoverModel3D
+
+`components/RoverModel3D.tsx`
+
+Chargement et affichage d'un modèle GLTF rover (support décodeur Draco).
+
+**Fonctionnalités :**
+
+- Charge fichier GLB depuis `/models/{modelPath}`
+- Décodeur Draco à `/draco/`
+- Auto-centrage via bounding box
+- Auto-scaling pour cible visuelle de 2 unités
+- Fallback cube placeholder si modèle absent
+- Rotation continue (@delta × 0.3 ou 0.5 rad/s)
+
+---
+
+### 4.9 Globe
 
 `components/Globe.tsx`
 
@@ -153,7 +359,7 @@ Sphère texturée représentant la Terre. Charge les textures WebP depuis `publi
 
 ---
 
-### 4.2 ISS
+### 4.10 ISS
 
 `components/ISS.tsx`
 
@@ -167,11 +373,11 @@ Sphère texturée représentant la Terre. Charge les textures WebP depuis `publi
 - Clic → affiche les informations (altitude, vitesse, position) dans le `SidePanel`
 - Taille du modèle adaptée au zoom (scale factor)
 
-**Store :** `useISSStore` (position ECI, données ISS, chargement TLE on-demand).
+**Store :** `useISSStore` (données TLE, sélection, chargement on-demand).
 
 ---
 
-### 4.3 NightSky
+### 4.11 NightSky
 
 `components/NightSky.tsx`
 
@@ -187,7 +393,7 @@ Scène principale du mode ciel. Orchestre tous les sous-composants.
 
 ---
 
-### 4.4 MilkyWay
+### 4.12 MilkyWay
 
 `components/MilkyWay.tsx`
 
@@ -199,7 +405,7 @@ Sphère inversée (`side: THREE.BackSide`) avec texture équirectangulaire (2:1)
 
 ---
 
-### 4.5 AzAltGrid
+### 4.13 AzAltGrid
 
 `components/AzAltGrid.tsx`
 
@@ -212,7 +418,7 @@ Grille azimut/altitude en coordonnées horizontales locales.
 
 ---
 
-### 4.6 ConstellationPattern
+### 4.14 ConstellationPattern
 
 `components/ConstellationPattern.tsx`
 
@@ -224,7 +430,7 @@ Trace les lignes d'une constellation sélectionnée dans la scène 3D.
 
 ---
 
-### 4.7 LocationMarker
+### 4.15 LocationMarker
 
 `components/LocationMarker.tsx`
 
@@ -246,9 +452,11 @@ Panneau latéral gauche. Contenu conditionnel selon l'état :
 
 | État                | Contenu                                                           |
 | ------------------- | ----------------------------------------------------------------- |
-| Aucune sélection    | Formulaire de configuration (ville, magnitude limite)             |
+| Aucune sélection    | Formulaire de configuration (ville, magnitude limite, mode switch)|
 | Étoile sélectionnée | Fiche détaillée : nom, magnitude, distance, type spectral, RA/Dec |
 | ISS sélectionnée    | Télémétrie ISS : altitude, vitesse, lat/lon                       |
+| Planète sélectionnée| Infos planète : rayon, masse, période orbitale, description       |
+| Rover sélectionné   | (Déclenche RoverOverlay à la place)                               |
 
 **Actions :**
 
@@ -285,7 +493,7 @@ Curseur temporel flottant (bas de l'écran, mode sky).
 
 ---
 
-### 5.4 ConstellationGuide
+### 5.5 ConstellationGuide
 
 `components/ConstellationGuide.tsx`
 
@@ -297,7 +505,7 @@ Indicateur HTML qui affiche une flèche à l'écran pointant vers la constellati
 
 ---
 
-### 5.5 EarthGuide
+### 5.6 EarthGuide
 
 `components/EarthGuide.tsx`
 
@@ -305,7 +513,7 @@ Indicateur de la direction du sol en mode sky. S'affiche dans le bas de l'écran
 
 ---
 
-### 5.6 StarTooltip
+### 5.7 StarTooltip
 
 `components/StarTooltip.tsx`
 
@@ -313,13 +521,14 @@ Tooltip 3D affiché au survol d'une étoile dans le canvas. Affiche le nom propr
 
 ---
 
-### 5.7 Effects
+### 5.8 Effects
 
 `components/Effects.tsx`
 
 Post-processing `@react-three/postprocessing` :
 
-- Bloom sur les étoiles brillantes (mode sky uniquement)
+- Bloom sur les étoiles brillantes (mode sky)
+- Bloom sur le Soleil (mode system)
 
 ---
 
@@ -329,23 +538,35 @@ L'état global est géré avec **Zustand v5** (stores atomiques, sans contexte R
 
 ### 6.1 useSkyStore
 
-| Champ           | Type                  | Description                        |
-| --------------- | --------------------- | ---------------------------------- |
-| `viewMode`      | `"globe" \| "sky"`    | Mode actif                         |
-| `timestamp`     | `string \| undefined` | Temps ISO 8601 sélectionné         |
-| `stars`         | `VisibleStar[]`       | Étoiles visibles chargées          |
-| `loadingStars`  | `boolean`             | En chargement                      |
-| `hoveredStar`   | `VisibleStar \| null` | Étoile survolée                    |
-| `selectedStar`  | `VisibleStar \| null` | Étoile cliquée                     |
-| `cameraTarget`  | `[x,y,z] \| null`     | Cible caméra (centrage sur étoile) |
-| `showAzAltGrid` | `boolean`             | Grille Az/Alt visible              |
-| `error`         | `string \| null`      | Message d'erreur                   |
+| Champ                   | Type                  | Description                                       |
+| ----------------------- | --------------------- | ------------------------------------------------- |
+| `viewMode`              | `"globe" \| "sky" \| "system"` | Mode actif (système solaire défaut)     |
+| `timestamp`             | `string \| undefined` | Temps ISO 8601 sélectionné                        |
+| `stars`                 | `VisibleStar[]`       | Étoiles visibles chargées                         |
+| `loadingStars`          | `boolean`             | En chargement                                     |
+| `hoveredStar`           | `VisibleStar \| null` | Étoile survolée                                   |
+| `selectedStar`          | `VisibleStar \| null` | Étoile cliquée                                    |
+| `selectedPlanet`        | `PlanetId \| null`    | Planète sélectionnée (pour zoom globe)            |
+| `selectedRoverId`       | `string \| null`      | ID du rover (déclenche RoverOverlay)              |
+| `roverPositions`        | `RoverPosition[]`     | Positions dynamo des rovers (from backend)        |
+| `roverOverlayClosing`   | `boolean`             | Animation fermeture overlay en cours              |
+| `isSystemRotating`      | `boolean`             | Mode rotation auto du système solaire             |
+| `systemRotationSpeed`   | `number`              | Vitesse en jours/seconde (défaut 15)              |
+| `showOrbits`            | `boolean`             | Affichage des orbites planétaires                 |
+| `cameraTarget`          | `[x,y,z] \| null`     | Cible caméra (centrage sur étoile)                |
+| `showAzAltGrid`         | `boolean`             | Grille Az/Alt visible (mode sky)                  |
+| `error`                 | `string \| null`      | Message d'erreur                                  |
 
 **Actions principales :**
 
-- `setViewMode(mode)` — bascule de mode
+- `setViewMode(mode)` / `transitionToMode(mode, planet?)` — bascule de mode avec transition
 - `fetchVisibleStars(lat, lon, timestamp?)` — appel API + mise à jour stars
-- `toggleAzAltGrid()` — toggle de la grille
+- `fetchRoverPositions()` — récupère positions rovers depuis backend
+- `setSelectedRoverId(id)` — sélection rover (déclenche RoverOverlay)
+- `setSelectedPlanet(planet)` — sélection planète (zoom sur globe)
+- `toggleAzAltGrid()` — toggle grille Az/Alt
+- `toggleSystemRotation()` / `setSystemRotationSpeed(speed)` — contrôle rotation système
+- `toggleOrbits()` — affichage/masquage orbites
 
 ---
 
@@ -385,6 +606,26 @@ Gère le point d'observation courant (ville sélectionnée dans le SidePanel).
 
 ---
 
+### 6.5 useSatelliteStore
+
+| Champ                | Type                         | Description                                     |
+| -------------------- | ---------------------------- | ----------------------------------------------- |
+| `showSatellites`     | `boolean`                    | Toggle global d'affichage (défaut `false`)      |
+| `activeGroups`       | `Set<SatelliteGroup>`        | Groupes actifs (défaut : `stations`, `gps-ops`) |
+| `tleByGroup`         | `Record<string, SatelliteTLE[]>` | TLE cachés par groupe                       |
+| `loadingGroups`      | `Set<string>`                | Groupes en cours de chargement                  |
+| `error`              | `string \| null`             | Erreur de fetch                                 |
+| `selectedSatellite`  | `SatelliteLiveInfo \| null`  | Satellite sélectionné au clic                   |
+
+**Actions :**
+
+- `toggleSatellites()` — active/désactive l'affichage global
+- `toggleGroup(group)` — ajoute ou retire un groupe des groupes actifs
+- `fetchGroup(group)` — charge les TLE d'un groupe si non déjà en cache
+- `setSelectedSatellite(info)` / `clearSelection()` — sélection satellite
+
+---
+
 ## 7. Service API
 
 `frontend/src/services/api.ts`
@@ -394,7 +635,8 @@ Client Axios centralisé. Base URL : `http://localhost:8000`.
 **Méthodes exposées :**
 
 ```typescript
-astronomyService.getVisibleStars(lat, lon, timestamp?)
+// Étoiles & constellation
+astronomyService.getVisibleStars(lat, lon, timestamp?, magLimit?)
     → GET /api/stars/visible
 
 astronomyService.getAllConstellations()
@@ -406,11 +648,24 @@ astronomyService.searchConstellations(q)
 astronomyService.getBestObservationPoint(constellationId, timestamp?)
     → GET /api/constellations/{id}/best-location
 
+// Points d'observation
 astronomyService.getObservationPoints()
     → GET /api/observation-points
 
+// ISS (TLE)
 astronomyService.getIssTle()
     → GET /api/iss/tle
+
+// Rovers
+astronomyService.getRoverPositions()
+    → GET /api/rovers/positions
+
+// Satellites (TLE proxy CelesTrak)
+astronomyService.getSatelliteTLEs(group)
+    → GET /api/satellites/tle?group={group}
+
+astronomyService.getSatelliteGroups()
+    → GET /api/satellites/groups
 ```
 
 ---

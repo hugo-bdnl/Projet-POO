@@ -3,12 +3,16 @@ import { useObservationStore } from "../stores/useObservationStore";
 import { useSkyStore } from "../stores/useSkyStore";
 import { useConstellationStore } from "../stores/useConstellationStore";
 import { useISSStore } from "../stores/useISSStore";
+import { useSatelliteStore } from "../stores/useSatelliteStore";
+import {
+  SATELLITE_GROUP_META,
+  type SatelliteGroup,
+} from "../types/satellite";
 
 export function SidePanel() {
   const { selectedPoint, setSelectedPoint } = useObservationStore();
   const {
     viewMode,
-    setViewMode,
     fetchVisibleStars,
     loadingStars,
     selectedStar,
@@ -16,6 +20,8 @@ export function SidePanel() {
     stars,
     timestamp,
     setCameraTarget,
+    selectedPlanet,
+    transitionToMode,
   } = useSkyStore();
 
   const {
@@ -23,9 +29,18 @@ export function SidePanel() {
     clearSelection,
     constellationNameMap,
     fetchConstellationNames,
+    isConstellationSidebarOpen,
   } = useConstellationStore();
 
   const { selectedISS, issInfo, clearISSSelection } = useISSStore();
+  const {
+    selectedSatellite,
+    clearSelection: clearSatelliteSelection,
+    showSatellites,
+    toggleSatellites,
+    activeGroups,
+    toggleGroup,
+  } = useSatelliteStore();
 
   // Charger la table de correspondance abréviation → nom complet
   useEffect(() => {
@@ -70,7 +85,7 @@ export function SidePanel() {
     if (selectedPoint) {
       setCameraTarget(null);
       clearSelection(); // Retirer la constellation pour restaurer la luminosité
-      setViewMode("sky");
+      transitionToMode("sky");
       fetchVisibleStars(
         selectedPoint.latitude,
         selectedPoint.longitude,
@@ -80,7 +95,7 @@ export function SidePanel() {
   };
 
   const handleReturnToGlobe = () => {
-    setViewMode("globe");
+    transitionToMode("globe");
     setSelectedStar(null);
     setCameraTarget(null);
     clearSelection();
@@ -91,18 +106,34 @@ export function SidePanel() {
 
   // ... (Recherche céleste déplacée vers ConstellationSidebar)
 
-  // ── Rendu ISS ──────────────────────────────────────────────────────────────
-  if (viewMode === "globe" && selectedISS && issInfo) {
+  // ── Hide SidePanel on other planets ────────────────────────────────────────
+  if (viewMode === "globe" && selectedPlanet && selectedPlanet !== "earth") {
+    return null;
+  }
+
+  // ── Rendu ISS Info component block ──────────────────────────────────────────
+  const ISSInfoBlock = () => {
+    if (!selectedISS || !issInfo) return null;
     return (
-      <div className="side-panel">
+      <div
+        style={{
+          marginTop: "1.5rem",
+          borderTop: "1px solid rgba(255,255,255,0.1)",
+          paddingTop: "1.5rem",
+          position: "relative",
+        }}
+      >
         <button
           className="close-button"
           onClick={clearISSSelection}
           title="Fermer"
+          style={{ top: "1.2rem", right: "0" }}
         >
           ✕
         </button>
-        <h2>🛸 Station Spatiale ISS</h2>
+        <h2 style={{ fontSize: "1.1rem", marginBottom: "1rem" }}>
+          🛸 Station Spatiale ISS
+        </h2>
 
         <div className="info-group">
           <span className="label">Latitude</span>
@@ -156,11 +187,127 @@ export function SidePanel() {
         </div>
       </div>
     );
+  };
+
+  // ── Rendu Satellite Info component block ──────────────────────────────────
+  const SatelliteInfoBlock = () => {
+    if (!selectedSatellite) return null;
+    const groupMeta = SATELLITE_GROUP_META[selectedSatellite.group] || {
+      label: "Inconnu",
+      color: "#999999",
+      description: "Groupe inconnu",
+    };
+    return (
+      <div
+        style={{
+          marginTop: "1.5rem",
+          borderTop: "1px solid rgba(255,255,255,0.1)",
+          paddingTop: "1.5rem",
+          position: "relative",
+        }}
+      >
+        <button
+          className="close-button"
+          onClick={clearSatelliteSelection}
+          title="Fermer"
+          style={{ top: "1.2rem", right: "0" }}
+        >
+          ✕
+        </button>
+        <h2 style={{ fontSize: "1.1rem", marginBottom: "1rem" }}>
+          {selectedSatellite.name}
+        </h2>
+
+        {/* Badge groupe */}
+        <div
+          style={{
+            display: "inline-block",
+            padding: "3px 10px",
+            borderRadius: "12px",
+            background: `${groupMeta.color}20`,
+            border: `1px solid ${groupMeta.color}44`,
+            color: groupMeta.color,
+            fontSize: "0.75rem",
+            fontWeight: "bold",
+            marginBottom: "1rem",
+          }}
+        >
+          {groupMeta.label}
+        </div>
+
+        <div className="info-group">
+          <span className="label">NORAD ID</span>
+          <span className="value">{selectedSatellite.norad_id}</span>
+        </div>
+        <div className="info-group">
+          <span className="label">Latitude</span>
+          <span className="value">
+            {fmt(selectedSatellite.latitude_deg)}°
+          </span>
+        </div>
+        <div className="info-group">
+          <span className="label">Longitude</span>
+          <span className="value">
+            {fmt(selectedSatellite.longitude_deg)}°
+          </span>
+        </div>
+        <div className="info-group">
+          <span className="label">Altitude</span>
+          <span className="value">
+            {fmt(selectedSatellite.altitude_km, 1)} km
+          </span>
+        </div>
+        <div className="info-group">
+          <span className="label">Vitesse</span>
+          <span className="value">
+            {Math.round(selectedSatellite.speed_kmh).toLocaleString("fr-FR")}{" "}
+            km/h
+          </span>
+        </div>
+
+        <div
+          style={{
+            marginTop: "20px",
+            padding: "12px",
+            background: `${groupMeta.color}08`,
+            borderRadius: "8px",
+            border: `1px solid ${groupMeta.color}20`,
+            fontSize: "0.78rem",
+            color: "#aaa",
+            lineHeight: 1.6,
+          }}
+        >
+          <div>Inclinaison : {fmt(selectedSatellite.inclination_deg, 1)}°</div>
+          <div>
+            Période orbitale : {fmt(selectedSatellite.period_min, 1)} min
+          </div>
+          <div
+            style={{
+              marginTop: "6px",
+              color: groupMeta.color,
+              fontSize: "0.7rem",
+            }}
+          >
+            Position calculée en temps réel via TLE NORAD (SGP4)
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  if (viewMode === "system") {
+    return null; // Suppression totale du panneau "Système Solaire" / "Retourner sur Terre" comme demandé
   }
+
+  const isGlobeLeft = viewMode === "globe";
+  const isShifted =
+    isGlobeLeft &&
+    isConstellationSidebarOpen &&
+    (!selectedPlanet || selectedPlanet === "earth");
 
   return (
     <div
-      className={`side-panel${viewMode === "sky" ? " side-panel--sky" : ""}`}
+      className={`side-panel${viewMode === "sky" ? " side-panel--sky" : ""}${isGlobeLeft ? " side-panel--globe-left" : ""}${isShifted ? " shifted" : ""}`}
     >
       {viewMode === "globe" ? (
         <>
@@ -205,26 +352,120 @@ export function SidePanel() {
             </>
           )}
 
-          {!selectedPoint && (
-            <>
-              <h2>Terre</h2>
-              <p style={{ color: "grey", fontSize: "0.9em" }}>
-                Cliquez un point sur le globe pour explorer ce lieu.
-              </p>
+          {!selectedPoint &&
+            (!selectedPlanet || selectedPlanet === "earth") && (
+              <>
+                <h2>Terre</h2>
+                <p style={{ color: "grey", fontSize: "0.9em" }}>
+                  Cliquez un point sur le globe pour explorer ce lieu.
+                </p>
 
-              {loadingDetail && (
-                <p
+                {loadingDetail && (
+                  <p
+                    style={{
+                      fontSize: "0.8em",
+                      color: "#bb88f6",
+                      marginTop: "15px",
+                    }}
+                  >
+                    Calcul de l'orbite optimale...
+                  </p>
+                )}
+              </>
+            )}
+
+          {/* Contrôle couverture satellite (Terre uniquement) */}
+          {(!selectedPlanet || selectedPlanet === "earth") && (
+            <div
+              style={{
+                marginTop: "1.5rem",
+                borderTop: "1px solid rgba(255,255,255,0.1)",
+                paddingTop: "1rem",
+              }}
+            >
+              <button
+                onClick={toggleSatellites}
+                className={`hud-button ${showSatellites ? "hud-button--active" : ""}`}
+                style={{ width: "100%", marginBottom: showSatellites ? "8px" : 0 }}
+              >
+                {showSatellites ? "SATELLITES ON" : "SATELLITES"}
+              </button>
+
+              {showSatellites && (
+                <div
                   style={{
-                    fontSize: "0.8em",
-                    color: "#bb88f6",
-                    marginTop: "15px",
+                    background: "rgba(10, 10, 10, 0.85)",
+                    border: "1px solid rgba(0, 240, 255, 0.3)",
+                    borderRadius: "12px",
+                    padding: "10px 12px",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "6px",
+                    backdropFilter: "blur(5px)",
                   }}
                 >
-                  Calcul de l'orbite optimale...
-                </p>
+                  <div
+                    style={{
+                      color: "#00f0ff",
+                      fontSize: "0.75rem",
+                      fontWeight: "bold",
+                      fontFamily: "monospace",
+                      marginBottom: "4px",
+                      textTransform: "uppercase",
+                      letterSpacing: "0.05em",
+                    }}
+                  >
+                    Groupes
+                  </div>
+                  {(
+                    Object.keys(SATELLITE_GROUP_META) as SatelliteGroup[]
+                  ).map((group) => {
+                    const meta = SATELLITE_GROUP_META[group];
+                    const isActive = activeGroups.has(group);
+                    return (
+                      <button
+                        key={group}
+                        onClick={() => toggleGroup(group)}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "8px",
+                          padding: "5px 8px",
+                          borderRadius: "6px",
+                          border: "1px solid",
+                          borderColor: isActive
+                            ? `${meta.color}66`
+                            : "transparent",
+                          background: isActive
+                            ? `${meta.color}15`
+                            : "transparent",
+                          color: isActive ? meta.color : "#666",
+                          cursor: "pointer",
+                          fontSize: "0.8rem",
+                          textAlign: "left",
+                          transition: "all 0.15s ease",
+                        }}
+                      >
+                        <span
+                          style={{
+                            width: "8px",
+                            height: "8px",
+                            borderRadius: "50%",
+                            background: isActive ? meta.color : "#333",
+                            flexShrink: 0,
+                          }}
+                        />
+                        {meta.label}
+                      </button>
+                    );
+                  })}
+                </div>
               )}
-            </>
+            </div>
           )}
+
+          <ISSInfoBlock />
+          <SatelliteInfoBlock />
         </>
       ) : (
         <>

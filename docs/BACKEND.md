@@ -60,33 +60,41 @@ Client HTTP
 ```
 backend/
 ├── app/
-│   ├── main.py               # Point d'entrée FastAPI, CORS, lifespan
-│   ├── config.py             # Settings (pydantic-settings, .env)
-│   ├── database.py           # Engine SQLAlchemy, session factory, Base
+│   ├── main.py                       # Point d'entrée FastAPI, CORS, lifespan
+│   ├── config.py                     # Settings (pydantic-settings, .env)
+│   ├── database.py                   # Engine SQLAlchemy, session factory, Base
 │   ├── api/
-│   │   ├── stars.py          # GET /api/stars/*
-│   │   ├── constellations.py # GET /api/constellations/*
-│   │   ├── observation_points.py # GET /api/observation-points/*
-│   │   └── iss.py            # GET /api/iss/tle
+│   │   ├── stars.py                  # GET /api/stars/*
+│   │   ├── constellations.py         # GET /api/constellations/*
+│   │   ├── observation_points.py     # GET /api/observation-points/*
+│   │   ├── iss.py                    # GET /api/iss/tle
+│   │   ├── rovers.py                 # GET /api/rovers/positions
+│   │   └── satellites.py             # GET /api/satellites/tle, GET /api/satellites/groups
 │   ├── models/
-│   │   ├── star.py           # ORM Star
-│   │   ├── constellation.py  # ORM Constellation + ConstellationStar
-│   │   └── observation_point.py # ORM ObservationPoint
+│   │   ├── star.py                   # ORM Star
+│   │   ├── constellation.py          # ORM Constellation + ConstellationStar
+│   │   ├── observation_point.py      # ORM ObservationPoint
+│   │   └── rover.py                  # ORM Rover
 │   ├── schemas/
-│   │   ├── star.py           # StarDetail, VisibleStarResponse
-│   │   ├── constellation.py  # ConstellationListResponse, ConstellationDetailResponse, BestLocationResponse
-│   │   └── observation_point.py # ObservationPointResponse
+│   │   ├── star.py                   # StarDetail, VisibleStarResponse
+│   │   ├── constellation.py          # ConstellationListResponse, ConstellationDetailResponse, BestLocationResponse
+│   │   ├── observation_point.py      # ObservationPointResponse
+│   │   ├── rovers.py                 # RoverPosition, RoverPositionsResponse
+│   │   └── satellite.py              # SatelliteTLE, SatelliteTLEResponse
 │   ├── repositories/
 │   │   ├── star_repository.py
 │   │   ├── constellation_repository.py
-│   │   └── observation_point_repository.py
+│   │   ├── observation_point_repository.py
+│   │   └── rover_repository.py
 │   └── services/
-│       ├── astronomy_service.py  # Calculs AstroPy vectorisés
-│       └── cache_service.py      # Cache LRU + TTL
+│       ├── astronomy_service.py      # Calculs AstroPy vectorisés
+│       ├── cache_service.py          # Cache LRU + TTL
+│       ├── rovers_service.py         # RoversService + seed defaults
+│       └── satellite_service.py      # Proxy CelesTrak + cache TTL 12h par groupe
 ├── data/
-│   └── nightsky.db           # Base SQLite (générée au démarrage)
+│   └── nightsky.db                   # Base SQLite (générée au démarrage)
 ├── scripts/
-│   └── import_stars.py       # Import catalogue HYG
+│   └── import_stars.py               # Import catalogue HYG
 ├── Dockerfile
 ├── requirements.txt
 └── .env
@@ -157,6 +165,27 @@ Table : `constellation_stars`
 Table : `observation_point`
 
 Représente une ville/lieu d'observation avec ses coordonnées géographiques.
+
+---
+
+### 3.5 Rover (NEW)
+
+Table : `rovers`
+
+Position et métadonnées d'un rover martien. Positions éditables en base sans redéploiement.
+
+| Colonne       | Type      | Description                           |
+| ------------- | --------- | ------------------------------------- |
+| `id`          | INT PK    | —                                     |
+| `slug`        | TEXT UNIQ | Identifiant unique (ex: curiosity)    |
+| `name`        | TEXT      | Nom affiché                           |
+| `agency`      | TEXT      | Agence spatiale (ex: NASA / MSL)      |
+| `active`      | BOOLEAN   | Mission en cours                      |
+| `latitude`    | FLOAT     | Latitude Mars (degrés, N positif)     |
+| `longitude`   | FLOAT     | Longitude Mars (degrés, E positif)    |
+| `landing_site`| TEXT      | Nom du site d'atterrissage             |
+
+**Rovers par défaut :** Curiosity, Perseverance, Opportunity, Spirit, Zhurong.
 
 ---
 
@@ -333,7 +362,82 @@ L'ISS est identifiée par son nom `ISS (ZARYA)` ou son NORAD ID `25544`.
 
 ---
 
-### 4.5 Health — `/`
+### 4.5 Rovers — `/api/rovers` (NEW)
+
+#### `GET /api/rovers/positions`
+
+Retourne les positions de tous les rovers martiens.
+
+**Algorithme :**
+
+1. Récupère tous les rovers de la table `rovers`
+2. Si la table est vide, insère les positions par défaut (seed) automatiquement
+3. Retourne la liste avec métadonnées statiques mergées côté frontend
+
+**Réponse :**
+
+```json
+{
+  "rovers": [
+    {
+      "slug": "curiosity",
+      "name": "Curiosity",
+      "agency": "NASA / MSL",
+      "active": true,
+      "latitude": -4.6,
+      "longitude": 137.4,
+      "landing_site": "Gale Crater"
+    }
+  ],
+  "total": 5
+}
+```
+
+---
+
+### 4.6 Satellites — `/api/satellites`
+
+#### `GET /api/satellites/tle?group={group}`
+
+Proxy vers CelesTrak pour les TLE d'un groupe de satellites. **Résultat mis en cache 12 heures par groupe.**
+
+**Paramètres de requête :**
+
+| Paramètre | Type     | Requis | Default      | Description                                         |
+| --------- | -------- | ------ | ------------ | --------------------------------------------------- |
+| `group`   | `string` | ❌     | `"stations"` | Groupe CelesTrak (voir liste ci-dessous)            |
+
+**Groupes disponibles :** `stations`, `starlink`, `gps-ops`, `weather`, `resource`, `science`, `galileo`, `active`
+
+**Réponse :**
+
+```json
+{
+  "group": "stations",
+  "count": 42,
+  "satellites": [
+    {
+      "name": "ISS (ZARYA)",
+      "line1": "1 25544U 98067A   ...",
+      "line2": "2 25544  51.6400 ..."
+    }
+  ]
+}
+```
+
+**Erreurs :** `400` si le groupe est inconnu, `502` si CelesTrak est inaccessible ou retourne une réponse de rate-limit (1 fetch/2h par IP).
+
+---
+
+#### `GET /api/satellites/groups`
+
+Liste tous les groupes de satellites disponibles.
+
+**Réponse :** `{"groups": ["active", "galileo", "gps-ops", ...]}`
+
+---
+
+### 4.7 Health — `/`
 
 #### `GET /`
 
@@ -397,14 +501,52 @@ La clé de cache pour les positions est arrondie à **5 minutes** (granularité)
 
 ---
 
+### 5.3 RoversService
+
+`backend/app/services/rovers_service.py`
+
+Gère les positions des rovers martiens. Seed la table automatiquement si vide.
+
+**Méthodes :**
+
+- `get_all_positions(db) → list[dict]` — retourne tous les rovers + seed si nécessaire
+- `_seed_defaults(db)` — insère les 5 rovers par défaut
+
+---
+
+### 5.4 SatelliteService
+
+`backend/app/services/satellite_service.py`
+
+Proxy stateless vers CelesTrak — pas de modèle SQLAlchemy (données non persistées).
+
+**Fonctionnement :**
+
+- Cache en mémoire `TTLCache(maxsize=10, ttl=43200)` — 12h par groupe
+- Parse le format TLE 3-lignes (nom, line1, line2) avec validation stricte (préfixe `"1 "`/`"2 "` + longueur ≥ 69 caractères)
+- Détecte la réponse de rate-limit CelesTrak ("has not updated") et lève `RuntimeError`
+
+**Constantes :**
+
+- `VALID_GROUPS` — ensemble des 8 groupes supportés
+- `CELESTRAK_GROUPS` — mapping groupe → URL CelesTrak
+
+**Méthodes :**
+
+- `fetch_satellite_tles(group) → list[SatelliteTLE]` — async, lève `ValueError` si groupe inconnu
+- `parse_tle_text(text) → list[SatelliteTLE]` — parse un bloc texte TLE en liste de schémas
+
+---
+
 ## 6. Système de cache
 
-| Endpoint                  | Cache           | TTL    |
-| ------------------------- | --------------- | ------ |
-| `GET /api/stars/visible`  | Oui (dynamique) | 10 min |
-| `GET /api/constellations` | Oui (statique)  | 24 h   |
-| `GET /api/iss/tle`        | Oui (TTLCache)  | 12 h   |
-| Tous les autres           | Non             | —      |
+| Endpoint                        | Cache           | TTL    |
+| ------------------------------- | --------------- | ------ |
+| `GET /api/stars/visible`        | Oui (dynamique) | 10 min |
+| `GET /api/constellations`       | Oui (statique)  | 24 h   |
+| `GET /api/iss/tle`              | Oui (TTLCache)  | 12 h   |
+| `GET /api/satellites/tle`       | Oui (TTLCache)  | 12 h (par groupe) |
+| Tous les autres                 | Non             | —      |
 
 ---
 

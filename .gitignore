@@ -37,3 +37,9 @@ desktop.ini
 # ===== Misc =====
 *.bak
 *.tmp
+
+# ===== Database =====
+backend/data/*.db
+
+# ===== Claude Code =====
+.claude/settings.local.json

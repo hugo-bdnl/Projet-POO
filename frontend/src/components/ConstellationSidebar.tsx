@@ -129,6 +129,7 @@ export function ConstellationSidebar() {
     setViewMode,
     fetchVisibleStars,
     setCameraTarget,
+    selectedPlanet,
   } = useSkyStore();
   const { setSelectedPoint } = useObservationStore();
   const {
@@ -136,11 +137,12 @@ export function ConstellationSidebar() {
     fetchAllConstellations,
     loadingList,
     fetchConstellationDetailAndLocation,
+    isConstellationSidebarOpen,
+    setConstellationSidebarOpen,
   } = useConstellationStore();
 
   const [localSearch, setLocalSearch] = useState("");
   const [loadingActionId, setLoadingActionId] = useState<number | null>(null);
-  const [isCollapsed, setIsCollapsed] = useState(false);
 
   // Fetch all constellations on mount if not already loaded
   useEffect(() => {
@@ -159,8 +161,9 @@ export function ConstellationSidebar() {
     );
   }, [localSearch, allConstellations]);
 
-  // Only show in globe mode
-  if (viewMode !== "globe") return null;
+  // Only show in globe mode for Earth
+  if (viewMode !== "globe" || (selectedPlanet && selectedPlanet !== "earth"))
+    return null;
 
   const handleSelect = async (id: number) => {
     setLoadingActionId(id);
@@ -236,12 +239,14 @@ export function ConstellationSidebar() {
   };
 
   return (
-    <div className={`constellation-sidebar ${isCollapsed ? "collapsed" : ""}`}>
+    <div
+      className={`constellation-sidebar ${!isConstellationSidebarOpen ? "collapsed" : ""}`}
+    >
       <button
         className="sidebar-toggle-button"
-        onClick={() => setIsCollapsed(!isCollapsed)}
+        onClick={() => setConstellationSidebarOpen(!isConstellationSidebarOpen)}
         title={
-          isCollapsed
+          !isConstellationSidebarOpen
             ? "Afficher les constellations"
             : "Masquer les constellations"
         }

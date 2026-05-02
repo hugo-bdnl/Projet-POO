@@ -44,7 +44,7 @@ export function LocationMarker({
   // Animation de scale en fonction du survol ou de la sélection
   // On court-circuite si rien ne se passe (scale déjà normale) pour éviter
   // 50 boucles qui tournent en permanence sans raison
-  useFrame((_state, delta) => {
+  useFrame((_, delta) => {
     if (!meshRef.current) return;
     if (hovered || isSelected) {
       meshRef.current.scale.lerp(SCALE_HOVERED, delta * 10);

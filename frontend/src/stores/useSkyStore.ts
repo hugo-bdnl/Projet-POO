@@ -1,18 +1,22 @@
 import { create } from "zustand";
 import type { VisibleStar } from "../types";
+import type { RoverPosition } from "../types/rovers";
 import { astronomyService } from "../services/api";
 
-type ViewMode = "globe" | "sky";
+type ViewMode = "globe" | "sky" | "system";
 
 interface SkyState {
   viewMode: ViewMode;
   timestamp: string | undefined;
+  baseTimestamp: string | undefined;
+  dragTimestamp: string | undefined;
   stars: VisibleStar[];
   /** Étoiles du pattern de constellation absentes de stars[] (mag > 5) */
   constellationExtraStars: VisibleStar[];
   loadingStars: boolean;
   hoveredStar: VisibleStar | null;
   selectedStar: VisibleStar | null;
+  selectedPlanet: import("../types/planets").PlanetId | null;
   error: string | null;
 
   // Coordonnées courantes pour pouvoir fetcher les extras
@@ -21,6 +25,7 @@ interface SkyState {
 
   setViewMode: (mode: ViewMode) => void;
   setTimestamp: (iso: string) => void;
+  setDragTimestamp: (iso: string | undefined) => void;
   fetchVisibleStars: (
     lat: number,
     lon: number,
@@ -35,32 +40,68 @@ interface SkyState {
   clearConstellationExtras: () => void;
   setHoveredStar: (star: VisibleStar | null) => void;
   setSelectedStar: (star: VisibleStar | null) => void;
+  setSelectedPlanet: (
+    planet: import("../types/planets").PlanetId | null,
+  ) => void;
+  selectedRoverId: string | null;
+  setSelectedRoverId: (id: string | null) => void;
+  roverOverlayClosing: boolean;
+  setRoverOverlayClosing: (closing: boolean) => void;
+  roverPositions: RoverPosition[];
+  fetchRoverPositions: () => Promise<void>;
   cameraTarget: [number, number, number] | null;
   setCameraTarget: (target: [number, number, number] | null) => void;
   showAzAltGrid: boolean;
   toggleAzAltGrid: () => void;
+  isTransitioning: boolean;
+  transitionToMode: (
+    mode: ViewMode,
+    planet?: import("../types/planets").PlanetId | null,
+  ) => void;
+  isSystemRotating: boolean;
+  toggleSystemRotation: () => void;
+  systemRotationSpeed: number; // En jours par seconde
+  setSystemRotationSpeed: (speed: number) => void;
+  showOrbits: boolean;
+  toggleOrbits: () => void;
 }
 
 export const useSkyStore = create<SkyState>((set, get) => ({
-  viewMode: "globe",
+  viewMode: "system",
   timestamp: undefined,
+  baseTimestamp: undefined,
+  dragTimestamp: undefined,
   stars: [],
   constellationExtraStars: [],
   loadingStars: false,
   hoveredStar: null,
   selectedStar: null,
+  selectedPlanet: null,
+  selectedRoverId: null,
+  roverOverlayClosing: false,
+  roverPositions: [],
   error: null,
   currentLat: null,
   currentLon: null,
+  isTransitioning: false,
+  isSystemRotating: true,
+  systemRotationSpeed: 15,
+  showOrbits: true,
+
+  toggleSystemRotation: () => set((s) => ({ isSystemRotating: !s.isSystemRotating })),
+  setSystemRotationSpeed: (speed) => set({ systemRotationSpeed: speed }),
+  toggleOrbits: () => set((s) => ({ showOrbits: !s.showOrbits })),
 
   setViewMode: (mode) => set({ viewMode: mode }),
   setTimestamp: (iso) => set({ timestamp: iso }),
+  setDragTimestamp: (iso) => set({ dragTimestamp: iso }),
 
   fetchVisibleStars: async (lat, lon, timestamp) => {
     set({ loadingStars: true, error: null, currentLat: lat, currentLon: lon });
     try {
       const data = await astronomyService.getVisibleStars(lat, lon, timestamp);
-      set({ stars: data, loadingStars: false });
+      const fetchedTime = timestamp || new Date().toISOString();
+      set({ stars: data, loadingStars: false, baseTimestamp: fetchedTime });
     } catch (err: unknown) {
       set({
         error:
@@ -75,19 +116,11 @@ export const useSkyStore = create<SkyState>((set, get) => ({
 
   fetchConstellationExtras: async (patternHipIds) => {
     const { currentLat, currentLon, timestamp, stars } = get();
-    console.log("[DEBUG] fetchConstellationExtras called", {
-      patternHipIds: [...patternHipIds],
-      currentLat,
-      currentLon,
-      starsCount: stars.length,
-    });
-
     if (
       currentLat === null ||
       currentLon === null ||
       patternHipIds.size === 0
     ) {
-      console.log("[DEBUG] Early return: missing lat/lon or hipIds");
       return;
     }
 
@@ -98,12 +131,7 @@ export const useSkyStore = create<SkyState>((set, get) => ({
     const missingHipIds = [...patternHipIds].filter(
       (id) => !alreadyLoaded.has(id),
     );
-    console.log("[DEBUG] Missing hip_ids:", missingHipIds);
-
     if (missingHipIds.length === 0) {
-      console.log(
-        "[DEBUG] All pattern stars already in stars[], no extras needed",
-      );
       return;
     }
 
@@ -114,21 +142,11 @@ export const useSkyStore = create<SkyState>((set, get) => ({
         timestamp,
         8,
       );
-      console.log(
-        "[DEBUG] Fetched with mag_limit=8:",
-        allBright.length,
-        "stars",
-      );
-
       const extras = allBright.filter(
         (s) =>
           s.hip_id !== null &&
           patternHipIds.has(s.hip_id) &&
           !alreadyLoaded.has(s.hip_id),
-      );
-      console.log(
-        "[DEBUG] Extras found:",
-        extras.map((s) => ({ hip_id: s.hip_id, mag: s.magnitude })),
       );
       set({ constellationExtraStars: extras });
     } catch (err) {
@@ -140,10 +158,40 @@ export const useSkyStore = create<SkyState>((set, get) => ({
 
   setHoveredStar: (star) => set({ hoveredStar: star }),
   setSelectedStar: (star) => set({ selectedStar: star }),
+  setSelectedPlanet: (planet) =>
+    set({ selectedPlanet: planet, selectedRoverId: null }),
+  setSelectedRoverId: (id) => set({ selectedRoverId: id }),
+  setRoverOverlayClosing: (closing) => set({ roverOverlayClosing: closing }),
+
+  fetchRoverPositions: async () => {
+    // Ne fetch qu'une fois (si déjà en cache, on ne refait pas l'appel)
+    if (get().roverPositions.length > 0) return;
+    try {
+      const positions = await astronomyService.getRoverPositions();
+      set({ roverPositions: positions });
+    } catch (err) {
+      console.error("Échec de fetchRoverPositions:", err);
+    }
+  },
 
   cameraTarget: null,
   setCameraTarget: (target) => set({ cameraTarget: target }),
 
   showAzAltGrid: false,
   toggleAzAltGrid: () => set((s) => ({ showAzAltGrid: !s.showAzAltGrid })),
+
+  transitionToMode: (mode, planet) => {
+    // On force l'état isTransitioning pour afficher le Loader quoi qu'il arrive.
+    // On change IMMÉDIATEMENT la destination pour commencer à charger R3F en parallèle !
+    set({ isTransitioning: true, viewMode: mode });
+    if (planet !== undefined) {
+      set({ selectedPlanet: planet });
+    }
+
+    // On ferme la transition forcée minimale au bout de 1.5s.
+    // Si Three.js charge encore, il prendra le relai avec `active`.
+    setTimeout(() => {
+      set({ isTransitioning: false });
+    }, 1500);
+  },
 }));

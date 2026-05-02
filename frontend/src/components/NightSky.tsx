@@ -9,6 +9,7 @@ import { CompassRose } from "./CompassRose";
 import { ConstellationPattern } from "./ConstellationPattern";
 import { AzAltGrid } from "./AzAltGrid";
 import { MilkyWay } from "./MilkyWay";
+import { computeGMST } from "../utils/skyCoords";
 
 // Convertit la magnitude en taille d'étoile (plus la magnitude est faible, plus elle est grosse)
 const getStarSize = (magnitude: number): number => {
@@ -43,6 +44,7 @@ export const NightSky = () => {
   const { selectedConstellation } = useConstellationStore();
   const { showAzAltGrid } = useSkyStore();
   const materialRef = useRef<THREE.ShaderMaterial>(null);
+  const skyRotationGroup = useRef<THREE.Group>(null);
 
   // Toutes les étoiles à afficher : normales + extras du pattern
   const allStars = useMemo(
@@ -122,6 +124,38 @@ export const NightSky = () => {
       materialRef.current.uniforms.uHighlightActive.value +=
         (target - materialRef.current.uniforms.uHighlightActive.value) * 0.05;
     }
+
+    if (skyRotationGroup.current) {
+      const state = useSkyStore.getState();
+      const rawCurrentLat = state.currentLat;
+      const baseTimeStr = state.baseTimestamp;
+      const currentTimeStr = state.timestamp;
+
+      if (rawCurrentLat !== null && baseTimeStr) {
+        // La rotation de la voûte céleste se fait autour de l'Axe Pôlaire (Pôle Nord Céleste).
+        // Le PNC se trouve toujours vers le Nord (Azimut 0) à une hauteur (Altitude) égale à la latitude de l'observateur.
+        const [nx, ny, nz] = altAzToXYZ(rawCurrentLat, 0, 1);
+        const ncpVector = new THREE.Vector3(nx, ny, nz).normalize();
+
+        const baseDate = new Date(baseTimeStr);
+        // Use the fluid drag timestamp if we are currently dragging the time slider, otherwise the real one
+        const activeTimeStr = state.dragTimestamp || currentTimeStr;
+        const calculationDate = activeTimeStr
+          ? new Date(activeTimeStr)
+          : new Date();
+
+        const deltaGmst = computeGMST(calculationDate) - computeGMST(baseDate);
+
+        // La Terre tourne vers l'Est (+), donc la voûte céleste nous donne l'impression de tourner vers l'Ouest (-)
+        skyRotationGroup.current.setRotationFromAxisAngle(
+          ncpVector,
+          THREE.MathUtils.degToRad(-deltaGmst),
+        );
+      } else {
+        // Reset
+        skyRotationGroup.current.setRotationFromEuler(new THREE.Euler(0, 0, 0));
+      }
+    }
   });
 
   if (stars.length === 0) return null;
@@ -142,47 +176,55 @@ export const NightSky = () => {
 
   return (
     <group>
-      {<MilkyWay />}
+      {/* Éléments fixes : Liés au repère local de l'observateur (Ne tournent pas) */}
       <CompassRose />
-      <ConstellationPattern />
       {showAzAltGrid && <AzAltGrid />}
-      <points
-        onPointerOver={(e) => {
-          e.stopPropagation();
-          const closest = getValidIntersection(e.intersections);
-          if (closest?.index !== undefined) {
-            setHoveredStar(starMap.get(closest.index) || null);
-          } else {
-            setHoveredStar(null);
-          }
-        }}
-        onPointerOut={() => setHoveredStar(null)}
-        onClick={(e) => {
-          e.stopPropagation();
-          const closest = getValidIntersection(e.intersections);
-          if (closest?.index !== undefined) {
-            setSelectedStar(starMap.get(closest.index) || null);
-          }
-        }}
-      >
-        <bufferGeometry>
-          <bufferAttribute attach="attributes-position" args={[positions, 3]} />
-          <bufferAttribute attach="attributes-color" args={[colors, 3]} />
-          <bufferAttribute attach="attributes-size" args={[sizes, 1]} />
-          <bufferAttribute
-            attach="attributes-highlight"
-            args={[highlights, 1]}
-          />
-        </bufferGeometry>
-        {/* Shader Material custom pour supporter le per-vertex size et couleur */}
-        <shaderMaterial
-          ref={materialRef}
-          transparent
-          // Additive blending pour effet de lumière intense / cumuls
-          blending={THREE.AdditiveBlending}
-          depthWrite={false}
-          uniforms={uniforms}
-          vertexShader={`
+
+      {/* Éléments célestes : Tournent avec le temps autour de l'axe polaire */}
+      <group ref={skyRotationGroup}>
+        <MilkyWay />
+        <ConstellationPattern />
+
+        <points
+          onPointerOver={(e) => {
+            e.stopPropagation();
+            const closest = getValidIntersection(e.intersections);
+            if (closest?.index !== undefined) {
+              setHoveredStar(starMap.get(closest.index) || null);
+            } else {
+              setHoveredStar(null);
+            }
+          }}
+          onPointerOut={() => setHoveredStar(null)}
+          onClick={(e) => {
+            e.stopPropagation();
+            const closest = getValidIntersection(e.intersections);
+            if (closest?.index !== undefined) {
+              setSelectedStar(starMap.get(closest.index) || null);
+            }
+          }}
+        >
+          <bufferGeometry>
+            <bufferAttribute
+              attach="attributes-position"
+              args={[positions, 3]}
+            />
+            <bufferAttribute attach="attributes-color" args={[colors, 3]} />
+            <bufferAttribute attach="attributes-size" args={[sizes, 1]} />
+            <bufferAttribute
+              attach="attributes-highlight"
+              args={[highlights, 1]}
+            />
+          </bufferGeometry>
+          {/* Shader Material custom pour supporter le per-vertex size et couleur */}
+          <shaderMaterial
+            ref={materialRef}
+            transparent
+            // Additive blending pour effet de lumière intense / cumuls
+            blending={THREE.AdditiveBlending}
+            depthWrite={false}
+            uniforms={uniforms}
+            vertexShader={`
             attribute float size;
             attribute vec3 color;
             attribute float highlight;
@@ -198,7 +240,7 @@ export const NightSky = () => {
               gl_Position = projectionMatrix * mvPosition;
             }
           `}
-          fragmentShader={`
+            fragmentShader={`
             uniform float uTime;
             uniform float uHighlightActive;
             varying vec3 vColor;
@@ -219,8 +261,9 @@ export const NightSky = () => {
               gl_FragColor = vec4(finalColor, alpha);
             }
           `}
-        />
-      </points>
+          />
+        </points>
+      </group>
     </group>
   );
 };

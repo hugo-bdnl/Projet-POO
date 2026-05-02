@@ -20,13 +20,18 @@ const FUTURE_MINUTES = 45;
 const GLOBE_RADIUS = 1;
 
 /** Convertit latitude (rad), longitude (rad), altitude (km) → Vector3 dans la scène */
-const geodeticToVector3 = (lat: number, lon: number, alt: number) => {
+const geodeticToVector3 = (
+  lat: number,
+  lon: number,
+  alt: number,
+  targetVec = new THREE.Vector3(),
+) => {
   const earthRadiusKm = 6371.0;
   const altitudeAmplification = 2.0;
   const r = GLOBE_RADIUS + (alt / earthRadiusKm) * altitudeAmplification;
   const phi = Math.PI / 2 - lat;
   const theta = lon + Math.PI / 2;
-  return new THREE.Vector3(
+  return targetVec.set(
     r * Math.sin(phi) * Math.cos(theta),
     r * Math.cos(phi),
     r * Math.sin(phi) * Math.sin(theta),
@@ -78,11 +83,15 @@ export function ISS() {
   const lastTelemetryUpdate = useRef<number>(-999);
   const lastOrbitUpdate = useRef<number>(-999);
 
+  // Pré-allocations pour éviter de recréer 120 Vector3 par seconde !
+  const tempPosRef = useRef(new THREE.Vector3());
+  const tempLookAtRef = useRef(new THREE.Vector3());
+
   useFrame((state) => {
     if (!satrec || !issRef.current) return;
 
-    const now = new Date();
-    const nowMs = now.getTime();
+    const nowMs = Date.now();
+    const now = new Date(nowMs);
 
     // -----------------------------------------------------------------------
     // 1. TRAJECTOIRE — mise à jour 1× par seconde
@@ -113,8 +122,13 @@ export function ISS() {
     if (pv && pv.position && typeof pv.position !== "boolean") {
       const eci = pv.position as { x: number; y: number; z: number };
       const gd = eciToGeodetic(eci, gstime(now));
-      const pos = geodeticToVector3(gd.latitude, gd.longitude, gd.height);
-      issRef.current.position.copy(pos);
+      geodeticToVector3(
+        gd.latitude,
+        gd.longitude,
+        gd.height,
+        tempPosRef.current,
+      );
+      issRef.current.position.copy(tempPosRef.current);
 
       // Orientation vers la position à +1 seconde
       const nextT = new Date(nowMs + 1_000);
@@ -122,9 +136,13 @@ export function ISS() {
       if (nextPv && nextPv.position && typeof nextPv.position !== "boolean") {
         const nextEci = nextPv.position as { x: number; y: number; z: number };
         const nextGd = eciToGeodetic(nextEci, gstime(nextT));
-        issRef.current.lookAt(
-          geodeticToVector3(nextGd.latitude, nextGd.longitude, nextGd.height),
+        geodeticToVector3(
+          nextGd.latitude,
+          nextGd.longitude,
+          nextGd.height,
+          tempLookAtRef.current,
         );
+        issRef.current.lookAt(tempLookAtRef.current);
       }
 
       // ── Télémétrie — uniquement si l'ISS est sélectionné (panneau ouvert) ──

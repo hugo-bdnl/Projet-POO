@@ -14,7 +14,7 @@ import { altAzToVector3, SKY_RADIUS } from "../utils/skyCoords";
 const GRID_RADIUS = SKY_RADIUS * 0.99;
 const LABEL_RADIUS = SKY_RADIUS * 0.97;
 const SEGMENTS = 72;
-const LINE_COLOR = "#ffffffff";
+const LINE_COLOR = "#ffffff";
 
 const ALTITUDE_CIRCLES = [30, 60];
 const AZIMUTH_STEP = 30;
@@ -108,7 +108,8 @@ export const AzAltGrid = () => {
               key={`alt-label-${alt}-${az}`}
               position={pos}
               fontSize={0.4}
-              color="rgba(255,255,255,0.7)"
+              color="#ffffff"
+              fillOpacity={0.7}
               anchorX="center"
               anchorY="middle"
               depthOffset={-1}
@@ -128,11 +129,8 @@ export const AzAltGrid = () => {
             key={`cardinal-${label}`}
             position={pos}
             fontSize={isMainCardinal ? 0.7 : 0.5}
-            color={
-              isMainCardinal
-                ? "rgba(255,255,255,0.95)"
-                : "rgba(255,255,255,0.65)"
-            }
+            color="#ffffff"
+            fillOpacity={isMainCardinal ? 0.95 : 0.65}
             anchorX="center"
             anchorY="middle"
             depthOffset={-1}
