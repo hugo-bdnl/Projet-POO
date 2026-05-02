@@ -14,8 +14,10 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copie code source
 COPY . .
 
-# Création répertoire data
-RUN mkdir -p data
+# Création du répertoire data et import des données au moment du build
+# La base SQLite (étoiles, constellations, points d'observation) est baked dans l'image
+# ce qui évite d'avoir une base externe en production
+RUN mkdir -p data && python -m scripts.import_data
 
 EXPOSE 8000
 
