@@ -2,6 +2,7 @@ import { create } from "zustand";
 import type { VisibleStar } from "../types";
 import type { RoverPosition } from "../types/rovers";
 import { astronomyService } from "../services/api";
+import { clearOtherSelections } from "./selectionActions";
 
 type ViewMode = "globe" | "sky" | "system";
 
@@ -157,7 +158,10 @@ export const useSkyStore = create<SkyState>((set, get) => ({
   clearConstellationExtras: () => set({ constellationExtraStars: [] }),
 
   setHoveredStar: (star) => set({ hoveredStar: star }),
-  setSelectedStar: (star) => set({ selectedStar: star }),
+  setSelectedStar: (star) => {
+    set({ selectedStar: star });
+    if (star) clearOtherSelections("star");
+  },
   setSelectedPlanet: (planet) =>
     set({ selectedPlanet: planet, selectedRoverId: null }),
   setSelectedRoverId: (id) => set({ selectedRoverId: id }),

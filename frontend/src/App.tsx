@@ -15,6 +15,10 @@ import { PLANETS_METADATA } from "./types/planets";
 import { SolarSystem } from "./components/SolarSystem";
 import { PlanetInfoCard } from "./components/PlanetInfoCard";
 import { Loader3D } from "./components/Loader3D";
+import { MobilePlanetBadge } from "./components/MobilePlanetBadge";
+import { MobileSatellitesFab } from "./components/MobileSatellitesFab";
+import { MobileContextualCard } from "./components/MobileContextualCard";
+import { MobileSystemReturnButton } from "./components/MobileSystemReturnButton";
 
 // Lazy-loaded : le bundle de l'overlay rover n'est chargé qu'au premier clic
 const RoverOverlay = lazy(() => import("./components/RoverOverlay"));
@@ -258,6 +262,7 @@ function App() {
       {/* HUD top-right en mode sky : Retour Globe + toggle grille */}
       {viewMode === "sky" && (
         <div
+          className="hud-top-right hud-top-right--sky"
           style={{
             position: "absolute",
             top: "1.5rem",
@@ -301,11 +306,17 @@ function App() {
       {/* Toast Notification */}
       {toastMessage && <div className="toast-container">⚠️ {toastMessage}</div>}
 
-      {/* Panneau latéral HTML UI - Tâches 2 & 6 */}
+      {/* Panneau latéral HTML UI - Tâches 2 & 6 (caché sur mobile via CSS) */}
       <SidePanel />
       {/* Barre unifiée pour chercher et afficher les constellations en mode globe */}
       <ConstellationSidebar />
+      {/* Carte d'infos planète version desktop (cachée sur mobile via CSS) */}
       <PlanetInfoCard />
+      {/* Composants Mobile* (cachés sur PC via CSS) — remplacent SidePanel/PlanetInfoCard */}
+      <MobileSystemReturnButton />
+      <MobilePlanetBadge />
+      <MobileSatellitesFab />
+      <MobileContextualCard />
       {/* Overlay Mission Control rover — lazy-loaded */}
       <Suspense fallback={null}>
         <RoverOverlay />
@@ -316,6 +327,7 @@ function App() {
       {/* Bouton Play/Pause pour le mode Système Solaire */}
       {viewMode === "system" && (
         <div
+          className="hud-top-right hud-top-right--system"
           style={{
             position: "absolute",
             top: "1.5rem",
@@ -329,6 +341,7 @@ function App() {
         >
           {/* Conteneur principal (Play/Pause + Vitesse) */}
           <div
+            className="system-controls"
             style={{
               background: "rgba(10, 10, 10, 0.85)",
               border: "1px solid #00f0ff",
@@ -402,6 +415,7 @@ function App() {
                 value={systemRotationSpeed}
                 onChange={(e) => setSystemRotationSpeed(Number(e.target.value))}
                 disabled={!isSystemRotating}
+                className="system-controls__speed-input"
                 style={{
                   width: "200px",
                   cursor: isSystemRotating ? "pointer" : "not-allowed",

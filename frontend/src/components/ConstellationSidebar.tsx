@@ -149,6 +149,16 @@ export function ConstellationSidebar() {
     fetchAllConstellations();
   }, [fetchAllConstellations]);
 
+  // Sur mobile, replier la sidebar des constellations par défaut pour
+  // libérer la vue 3D. L'utilisateur peut toujours l'ouvrir via le toggle.
+  useEffect(() => {
+    if (typeof window !== "undefined" && window.matchMedia("(max-width: 768px)").matches) {
+      setConstellationSidebarOpen(false);
+    }
+    // S'exécute uniquement au montage initial — l'état utilisateur prime ensuite.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Client-side filtering
   const filteredConstellations = useMemo(() => {
     if (!localSearch.trim()) return allConstellations;

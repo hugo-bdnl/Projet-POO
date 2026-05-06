@@ -5,6 +5,7 @@ import type {
   SatelliteLiveInfo,
 } from "../types/satellite";
 import { astronomyService } from "../services/api";
+import { clearOtherSelections } from "./selectionActions";
 
 interface SatelliteState {
   // Toggle global d'affichage des satellites
@@ -81,6 +82,9 @@ export const useSatelliteStore = create<SatelliteState>((set, get) => ({
   },
 
   selectedSatellite: null,
-  setSelectedSatellite: (info) => set({ selectedSatellite: info }),
+  setSelectedSatellite: (info) => {
+    set({ selectedSatellite: info });
+    if (info) clearOtherSelections("satellite");
+  },
   clearSelection: () => set({ selectedSatellite: null }),
 }));

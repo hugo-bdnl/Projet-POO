@@ -103,6 +103,7 @@ export const TimeSlider = () => {
 
   return (
     <div
+      className="time-slider"
       style={{
         position: "absolute",
         bottom: "20px",

@@ -9,7 +9,11 @@
       "Bash(npx tsc:*)",
       "Bash(python -c \"from app.api.rovers import router; from app.services.rovers_service import rovers_service; from app.schemas.rovers import RoverPhotosResponse; print\\(''OK''\\)\")",
       "Bash(venv/Scripts/python -c \"from app.api.rovers import router; from app.services.rovers_service import rovers_service; from app.schemas.rovers import RoverPhotosResponse; print\\(''OK''\\)\")",
-      "Bash(venv/Scripts/python -c \":*)"
+      "Bash(venv/Scripts/python -c \":*)",
+      "Bash(echo \"EXIT_CODE=$?\")",
+      "Bash(npm run *)",
+      "Bash(kill %1)",
+      "Bash(echo \"TSC=$?\")"
     ]
   }
 }

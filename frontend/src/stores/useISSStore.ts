@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import axios from "axios";
 import type { ISSTLEData, ISSLiveInfo } from "../types/iss";
+import { clearOtherSelections } from "./selectionActions";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
@@ -44,6 +45,9 @@ export const useISSStore = create<ISSState>((set) => ({
     set((s) => ({ issInfo: { ...s.issInfo, ...info } as typeof s.issInfo })),
 
   selectedISS: false,
-  setSelectedISS: (v) => set({ selectedISS: v }),
+  setSelectedISS: (v) => {
+    set({ selectedISS: v });
+    if (v) clearOtherSelections("iss");
+  },
   clearISSSelection: () => set({ selectedISS: false }),
 }));

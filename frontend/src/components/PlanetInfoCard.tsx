@@ -26,6 +26,7 @@ export const PlanetInfoCard = () => {
 
   return (
     <div
+      className="planet-info-card"
       style={{
         position: "absolute",
         top: "2rem",

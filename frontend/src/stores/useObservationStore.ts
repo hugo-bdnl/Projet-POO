@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import type { ObservationPoint } from "../types";
 import { astronomyService } from "../services/api";
+import { clearOtherSelections } from "./selectionActions";
 
 interface ObservationState {
   points: ObservationPoint[];
@@ -32,5 +33,8 @@ export const useObservationStore = create<ObservationState>((set) => ({
       console.error("Échec de fetchPoints:", err);
     }
   },
-  setSelectedPoint: (point) => set({ selectedPoint: point }),
+  setSelectedPoint: (point) => {
+    set({ selectedPoint: point });
+    if (point) clearOtherSelections("point");
+  },
 }));

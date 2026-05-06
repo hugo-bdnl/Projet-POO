@@ -49,6 +49,7 @@ export default function RoverOverlay() {
 
   return (
     <div
+      className="rover-overlay"
       style={{
         position: "fixed",
         inset: 0,
@@ -64,6 +65,7 @@ export default function RoverOverlay() {
     >
       {/* Header — titre + bouton fermer */}
       <div
+        className="rover-overlay__header"
         style={{
           display: "flex",
           alignItems: "center",
@@ -131,6 +133,7 @@ export default function RoverOverlay() {
 
       {/* Contenu principal — 3 colonnes */}
       <div
+        className="rover-overlay__grid"
         style={{
           flex: 1,
           display: "grid",
@@ -142,6 +145,7 @@ export default function RoverOverlay() {
       >
         {/* Colonne gauche — Modèle 3D */}
         <div
+          className="rover-overlay__col rover-overlay__col--model"
           style={{
             borderRight: "1px solid rgba(255,255,255,0.06)",
             display: "flex",
@@ -188,6 +192,7 @@ export default function RoverOverlay() {
 
         {/* Colonne centre — Infos mission */}
         <div
+          className="rover-overlay__col rover-overlay__col--info"
           style={{
             borderRight: "1px solid rgba(255,255,255,0.06)",
             padding: "28px 32px",
@@ -265,6 +270,7 @@ export default function RoverOverlay() {
 
         {/* Colonne droite — Galerie photos */}
         <div
+          className="rover-overlay__col rover-overlay__col--gallery"
           style={{
             display: "flex",
             flexDirection: "column",
