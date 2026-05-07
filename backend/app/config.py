@@ -26,6 +26,7 @@ class Settings(BaseSettings):
     # --- CORS ---
     CORS_ORIGINS: list[str] = [
         "http://localhost:5173",   # Vite dev
+        "http://localhost:5174",   # Vite dev (port alternatif si 5173 occupé)
         "http://localhost:4173",   # Vite preview (npm run preview)
         "http://localhost:3000",
     ]

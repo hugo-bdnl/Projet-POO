@@ -595,7 +595,7 @@ body {
     max-width: min(340px, calc(100vw - 32px)) !important;
     box-sizing: border-box;
     padding: 8px 14px !important;
-    bottom: 8px !important;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 16px) !important;
     border-radius: 22px !important;
     gap: 4px !important;
   }
@@ -668,7 +668,7 @@ body {
 
   /* Toast — plus haut pour ne pas être caché par le TimeSlider mobile */
   .toast-container {
-    bottom: 80px;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 88px);
     max-width: calc(100vw - 32px);
     text-align: center;
     font-size: 0.85rem;
