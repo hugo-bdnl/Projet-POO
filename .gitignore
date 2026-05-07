@@ -41,5 +41,8 @@ desktop.ini
 # ===== Database =====
 backend/data/*.db
 
+# ===== Cache disque TLE satellites =====
+backend/data/tle_cache/
+
 # ===== Claude Code =====
 .claude/settings.local.json

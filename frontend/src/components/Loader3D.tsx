@@ -1,10 +1,10 @@
-import { Html, useProgress } from "@react-three/drei";
+import { useProgress } from "@react-three/drei";
 import "./TransitionScreen.css";
 
 import { useEffect, useState, useRef } from "react";
 import { useSkyStore } from "../stores/useSkyStore";
 
-function LoaderUI() {
+export function LoaderUI() {
   const { active, progress } = useProgress();
   const { isTransitioning, viewMode, selectedPlanet } = useSkyStore();
 
@@ -85,19 +85,7 @@ function LoaderUI() {
   }
 
   return (
-    <div
-      className="transition-overlay"
-      style={{
-        position: "absolute",
-        top: "50%",
-        left: "50%",
-        transform: "translate(-50%, -50%)",
-        width: "100vw",
-        height: "100vh",
-        zIndex: 9999,
-        pointerEvents: "all",
-      }}
-    >
+    <div className="transition-overlay">
       <div className="scanlines"></div>
 
       <div className="transition-content">
@@ -124,10 +112,8 @@ function LoaderUI() {
   );
 }
 
+// Loader3D kept as noop — LoaderUI est désormais rendu hors Canvas dans App.tsx
+// pour garantir un positionnement fixed fiable sur mobile.
 export function Loader3D() {
-  return (
-    <Html center prepend zIndexRange={[100, 0]}>
-      <LoaderUI />
-    </Html>
-  );
+  return null;
 }

@@ -1,9 +1,6 @@
 .transition-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
+  position: fixed;
+  inset: 0;
   z-index: 9999;
   background-color: rgba(5, 5, 10, 0.95);
   display: flex;
@@ -13,6 +10,7 @@
   font-family: "Courier New", Courier, monospace;
   overflow: hidden;
   backdrop-filter: blur(8px);
+  pointer-events: all;
 }
 
 .scanlines {

@@ -235,7 +235,7 @@ body {
 
 /* Toast Messages */
 .toast-container {
-  position: absolute;
+  position: fixed;
   bottom: 80px;
   left: 50%;
   transform: translateX(-50%);
@@ -264,7 +264,14 @@ body {
   }
 }
 
-/* 
+/* Toast info (ex : chargement satellites) — cyan, non bloquant */
+.toast-container--info {
+  background: rgba(0, 100, 160, 0.92);
+  border: 1px solid rgba(0, 240, 255, 0.35);
+  box-shadow: 0 4px 20px rgba(0, 240, 255, 0.15), 0 4px 20px rgba(0, 0, 0, 0.5);
+}
+
+/*
   ------ STYLES CONSTELLATION SIDEBAR ------
 */
 .constellation-sidebar {

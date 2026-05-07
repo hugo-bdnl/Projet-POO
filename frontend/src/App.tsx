@@ -14,7 +14,7 @@ import { EarthGuide } from "./components/EarthGuide";
 import { PLANETS_METADATA } from "./types/planets";
 import { SolarSystem } from "./components/SolarSystem";
 import { PlanetInfoCard } from "./components/PlanetInfoCard";
-import { Loader3D } from "./components/Loader3D";
+import { Loader3D, LoaderUI } from "./components/Loader3D";
 import { MobilePlanetBadge } from "./components/MobilePlanetBadge";
 import { MobileSatellitesFab } from "./components/MobileSatellitesFab";
 import { MobileContextualCard } from "./components/MobileContextualCard";
@@ -158,9 +158,10 @@ function App() {
   } = useSkyStore();
   const { error: constellationError } = useConstellationStore();
   const { error: obsError } = useObservationStore();
-  const { error: satelliteError } = useSatelliteStore();
+  const { error: satelliteError, showSatellites, loadingGroups } = useSatelliteStore();
 
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [satLoadingToast, setSatLoadingToast] = useState(false);
   const [gpuWarning, setGpuWarning] = useState<string | null>(null);
   const controlsRef = useRef<OrbitControlsImpl>(null);
 
@@ -180,7 +181,12 @@ function App() {
     }
   }, [skyError, constellationError, obsError]);
 
-  // Réglage du zoom (OrbitControls) selon le mode de vue
+  // Toast chargement satellites — visible tant que des groupes sont en cours de fetch
+  useEffect(() => {
+    setSatLoadingToast(showSatellites && loadingGroups.size > 0);
+  }, [showSatellites, loadingGroups]);
+
+  // Réglage du zoom (OrbitControls) selon le mode de vue et la planète sélectionnée
   useEffect(() => {
     if (controlsRef.current) {
       if (viewMode === "globe") {
@@ -198,10 +204,12 @@ function App() {
       }
       controlsRef.current.update();
     }
-  }, [viewMode]);
+  }, [viewMode, selectedPlanet]);
 
   return (
     <div id="canvas-container">
+      {/* Écran de chargement rendu hors Canvas pour un positionnement fixed fiable sur mobile */}
+      <LoaderUI />
       {/* Avertissement accélération GPU désactivée */}
       {gpuWarning && (
         <div style={{
@@ -303,8 +311,15 @@ function App() {
       )}
 
 
-      {/* Toast Notification */}
+      {/* Toast erreur */}
       {toastMessage && <div className="toast-container">⚠️ {toastMessage}</div>}
+
+      {/* Toast chargement satellites — info (cyan), auto-dismiss dès que le fetch est terminé */}
+      {satLoadingToast && (
+        <div className="toast-container toast-container--info">
+          Chargement des satellites...
+        </div>
+      )}
 
       {/* Panneau latéral HTML UI - Tâches 2 & 6 (caché sur mobile via CSS) */}
       <SidePanel />
@@ -516,6 +531,7 @@ function App() {
           ref={controlsRef}
           enableDamping
           dampingFactor={0.05}
+          zoomSpeed={0.7}
           minDistance={
             viewMode === "globe"
               ? (PLANETS_METADATA[selectedPlanet || "earth"]?.visualSize || 1) *

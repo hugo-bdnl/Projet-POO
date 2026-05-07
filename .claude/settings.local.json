@@ -13,7 +13,11 @@
       "Bash(echo \"EXIT_CODE=$?\")",
       "Bash(npm run *)",
       "Bash(kill %1)",
-      "Bash(echo \"TSC=$?\")"
+      "Bash(echo \"TSC=$?\")",
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\hugob\\\\OneDrive\\\\Documents\\\\TRIED\\\\POO\\\\Projet-POO\" -Recurse -Directory -ErrorAction SilentlyContinue)",
+      "Bash(Select-Object -ExpandProperty FullName)",
+      "Bash(python -c \"from app.services.satellite_service import fetch_satellite_tles, _read_disk_cache, _write_disk_cache; print\\('OK'\\)\")",
+      "Bash(python -c ' *)"
     ]
   }
 }
