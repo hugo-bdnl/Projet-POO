@@ -55,6 +55,7 @@ interface SkyState {
   showAzAltGrid: boolean;
   toggleAzAltGrid: () => void;
   isTransitioning: boolean;
+  setIsTransitioning: (val: boolean) => void;
   transitionToMode: (
     mode: ViewMode,
     planet?: import("../types/planets").PlanetId | null,
@@ -183,6 +184,8 @@ export const useSkyStore = create<SkyState>((set, get) => ({
 
   showAzAltGrid: false,
   toggleAzAltGrid: () => set((s) => ({ showAzAltGrid: !s.showAzAltGrid })),
+
+  setIsTransitioning: (val) => set({ isTransitioning: val }),
 
   transitionToMode: (mode, planet) => {
     // On force l'état isTransitioning pour afficher le Loader quoi qu'il arrive.

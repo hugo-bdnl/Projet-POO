@@ -130,6 +130,7 @@ export function ConstellationSidebar() {
     fetchVisibleStars,
     setCameraTarget,
     selectedPlanet,
+    setIsTransitioning,
   } = useSkyStore();
   const { setSelectedPoint } = useObservationStore();
   const {
@@ -177,75 +178,83 @@ export function ConstellationSidebar() {
 
   const handleSelect = async (id: number) => {
     setLoadingActionId(id);
+    // Afficher le loader immédiatement — les appels API suivants prennent 5-6s sur mobile
+    setIsTransitioning(true);
     // Vider les extras du pattern précédent
     useSkyStore.getState().clearConstellationExtras();
 
-    await fetchConstellationDetailAndLocation(id, timestamp);
+    try {
+      await fetchConstellationDetailAndLocation(id, timestamp);
 
-    const { bestLocation, selectedConstellation } =
-      useConstellationStore.getState();
-    if (bestLocation) {
-      const point = {
-        id: bestLocation.observation_point_id,
-        name: bestLocation.observation_point_name,
-        latitude: bestLocation.latitude,
-        longitude: bestLocation.longitude,
-        timezone: "UTC",
-      };
+      const { bestLocation, selectedConstellation } =
+        useConstellationStore.getState();
+      if (bestLocation) {
+        const point = {
+          id: bestLocation.observation_point_id,
+          name: bestLocation.observation_point_name,
+          latitude: bestLocation.latitude,
+          longitude: bestLocation.longitude,
+          timezone: "UTC",
+        };
 
-      setSelectedPoint(point);
-      setViewMode("sky");
-      await fetchVisibleStars(
-        bestLocation.latitude,
-        bestLocation.longitude,
-        timestamp,
-      );
+        setSelectedPoint(point);
+        setViewMode("sky");
+        await fetchVisibleStars(
+          bestLocation.latitude,
+          bestLocation.longitude,
+          timestamp,
+        );
 
-      const currentStars = useSkyStore.getState().stars;
-      if (selectedConstellation?.lines_data && currentStars.length > 0) {
-        try {
-          const pairs: [number, number][] = JSON.parse(
-            selectedConstellation.lines_data,
-          );
-          let cx = 0,
-            cy = 0,
-            cz = 0,
-            count = 0;
-          const starsByHip = new Map(
-            currentStars
-              .filter((s) => s.hip_id !== null)
-              .map((s) => [s.hip_id!, s]),
-          );
+        const currentStars = useSkyStore.getState().stars;
+        if (selectedConstellation?.lines_data && currentStars.length > 0) {
+          try {
+            const pairs: [number, number][] = JSON.parse(
+              selectedConstellation.lines_data,
+            );
+            let cx = 0,
+              cy = 0,
+              cz = 0,
+              count = 0;
+            const starsByHip = new Map(
+              currentStars
+                .filter((s) => s.hip_id !== null)
+                .map((s) => [s.hip_id!, s]),
+            );
 
-          const hipIds = new Set(pairs.flat());
+            const hipIds = new Set(pairs.flat());
 
-          // Fetcher les étoiles manquantes du pattern APRÈS fetchVisibleStars
-          // (les coordonnées currentLat/currentLon sont maintenant celles du best location)
-          await useSkyStore.getState().fetchConstellationExtras(hipIds);
+            // Fetcher les étoiles manquantes du pattern APRÈS fetchVisibleStars
+            // (les coordonnées currentLat/currentLon sont maintenant celles du best location)
+            await useSkyStore.getState().fetchConstellationExtras(hipIds);
 
-          for (const hipId of hipIds) {
-            const star = starsByHip.get(hipId);
-            if (star) {
-              const [sx, sy, sz] = altAzToXYZ(
-                star.altitude,
-                star.azimuth,
-                SKY_RADIUS,
-              );
-              cx += sx;
-              cy += sy;
-              cz += sz;
-              count++;
+            for (const hipId of hipIds) {
+              const star = starsByHip.get(hipId);
+              if (star) {
+                const [sx, sy, sz] = altAzToXYZ(
+                  star.altitude,
+                  star.azimuth,
+                  SKY_RADIUS,
+                );
+                cx += sx;
+                cy += sy;
+                cz += sz;
+                count++;
+              }
             }
+            if (count > 0) {
+              setCameraTarget([cx / count, cy / count, cz / count]);
+            }
+          } catch (e) {
+            console.error("Erreur calcul barycentre constellation", e);
           }
-          if (count > 0) {
-            setCameraTarget([cx / count, cy / count, cz / count]);
-          }
-        } catch (e) {
-          console.error("Erreur calcul barycentre constellation", e);
         }
       }
+    } finally {
+      // Fin du chargement — le loader disparaît (R3F prend le relai si des
+      // ressources 3D doivent encore se charger via useProgress.active)
+      setIsTransitioning(false);
+      setLoadingActionId(null);
     }
-    setLoadingActionId(null);
   };
 
   return (
