@@ -150,6 +150,7 @@ function App() {
     toggleAzAltGrid,
     error: skyError,
     isSystemRotating,
+    isTransitioning,
     toggleSystemRotation,
     systemRotationSpeed,
     setSystemRotationSpeed,
@@ -181,10 +182,17 @@ function App() {
     }
   }, [skyError, constellationError, obsError]);
 
-  // Toast chargement satellites — visible tant que des groupes sont en cours de fetch
+  // Toast chargement satellites — uniquement en mode globe, hors transition
+  // (évite l'affichage parasite lors du retour depuis sky mode)
   useEffect(() => {
-    setSatLoadingToast(showSatellites && loadingGroups.size > 0);
-  }, [showSatellites, loadingGroups]);
+    setSatLoadingToast(
+      showSatellites &&
+        loadingGroups.size > 0 &&
+        viewMode === "globe" &&
+        !isTransitioning &&
+        (!selectedPlanet || selectedPlanet === "earth"),
+    );
+  }, [showSatellites, loadingGroups, viewMode, isTransitioning, selectedPlanet]);
 
   // Réglage du zoom (OrbitControls) selon le mode de vue et la planète sélectionnée
   useEffect(() => {
