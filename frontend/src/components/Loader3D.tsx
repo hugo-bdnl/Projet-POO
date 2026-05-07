@@ -32,8 +32,13 @@ export function LoaderUI() {
     }
   }, [active, forceVisibleTimer, isFirstLoad]);
 
-  // Affiche l'écran si timer initial en cours, ou R3F charge, ou on force une transition
-  const visible = forceVisibleTimer || active || isTransitioning;
+  // Affiche l'écran si :
+  // - timer initial en cours (forceVisibleTimer)
+  // - transition explicite déclenchée (isTransitioning)
+  // - R3F charge des assets ET on est encore au premier chargement (active && isFirstLoad)
+  // NB: on exclut "active seul après le premier chargement" pour éviter que le loader
+  // n'apparaisse lors du chargement de ressources annexes (ex: modèle 3D rover).
+  const visible = forceVisibleTimer || isTransitioning || (active && isFirstLoad);
 
   // Suit la progression réelle de ThreeJS
   useEffect(() => {
